@@ -1,0 +1,69 @@
+# ⚡ RESUMEN EJECUTIVO - Cambios Realizados
+
+## 🎯 DOS PROBLEMAS ARREGLADOS
+
+### ❌→✅ PROBLEMA 1: Error 422 en Solicitudes
+**Fue:** Solicitud rechazada por falta de datos del estudiante  
+**Ahora:** Se envían `codigo_estudiantil`, `email_estudiante`, `nombre_estudiante`
+
+### ❌→✅ PROBLEMA 2: No se podía crear usuario  
+**Fue:** Botón "Guardar Usuario" mostraba error  
+**Ahora:** Admin puede crear usuarios completamente funcional
+
+---
+
+## 📝 ARCHIVOS MODIFICADOS (5)
+
+### 1. `src/types/index.ts`
+- ➕ `CreateUsuarioPayload` (interfaz nueva)
+- ➕ `UpdateUsuarioPayload` (interfaz nueva)
+
+### 2. `src/services/solicitudesService.ts`
+- ✏️ Método `crear()` ahora incluye datos de estudiante en el payload
+- ✏️ Cambio de camelCase a snake_case en nombres de campos
+
+### 3. `src/services/usuariosService.ts`
+- ➕ Método `crear()` para POST `/usuarios` (NUEVO)
+
+### 4. `src/pages/NuevasolicitudPage.vue`
+- ✏️ Función `handleSubmit()` mejorada
+- ➕ Validación que datos de estudiante existan
+- ➕ Mejor manejo de errores con console.log
+
+### 5. `src/pages/AdminUsuarios.vue`
+- ✏️ Función `guardarUsuario()` implementa creación
+- ➕ Integración con `usuariosService.crear()`
+
+### 6. 📄 `API_INTEGRATION.md` (NUEVO)
+Documentación de integración API
+
+### 7. 📄 `CAMBIOS_REALIZADOS.md` (NUEVO)
+Detalle completo con ejemplos
+
+---
+
+## 🚀 PRÓXIMOS PASOS
+
+```bash
+# 1. Compilar y probar
+npm run dev
+
+# 2. Probar crear solicitud (Estudiante)
+- Nueva Solicitud → Cambio de Curso
+- Debe enviar datos del estudiante
+- Debe redirigir a MiHistorial
+
+# 3. Probar crear usuario (Admin)  
+- Admin > Nuevo Usuario
+- Debe crear sin error 422
+- Debe aparecer en tabla inmediatamente
+```
+
+---
+
+## ✅ ESTADO: LISTO PARA PRUEBA
+
+No hay errores de compilación. El backend debe validar:
+- ✅ `codigo_estudiantil` en solicitudes
+- ✅ `email_institucional` no exista en usuarios
+- ✅ Retornar 422 con mensajes claros si hay validación

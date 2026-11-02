@@ -1,0 +1,26 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "index.ts",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": "migrations/**"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api-docs(.*)",
+      "dest": "index.ts"
+    },
+    {
+      "src": "/swagger-ui(.*)",
+      "dest": "index.ts"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "index.ts"
+    }
+  ]
+}
