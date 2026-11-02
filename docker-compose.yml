@@ -1,0 +1,94 @@
+name: proyecto-novedades
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-proyecto_novedades}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-proyecto_novedades}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  migrate:
+    build:
+      context: ./proyecto-novedades
+      dockerfile: Dockerfile.dev
+    command: ["node", "scripts/docker-bootstrap-db.js"]
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:-proyecto_novedades}
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    build:
+      context: ./proyecto-novedades
+      dockerfile: Dockerfile.dev
+    restart: unless-stopped
+    ports:
+      - "${API_PORT:-3000}:3000"
+    environment:
+      PORT: 3000
+      NODE_ENV: development
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:-proyecto_novedades}
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      JWT_SECRET: ${JWT_SECRET:-dev_jwt_secret_minimo_32_caracteres_local}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-8h}
+      BCRYPT_COST: ${BCRYPT_COST:-12}
+      CORS_ORIGIN_DEV: ${CORS_ORIGIN_DEV:-http://localhost:5173}
+      CORS_ORIGIN_PROD: ${CORS_ORIGIN_PROD:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_DOMINIO_PERMITIDO: ${GOOGLE_DOMINIO_PERMITIDO:-uniautonoma.edu.co}
+      STORAGE_TYPE: ${STORAGE_TYPE:-local}
+    volumes:
+      - ./proyecto-novedades:/app
+      - api_node_modules:/app/node_modules
+      - api_uploads:/app/uploads
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  web:
+    build:
+      context: ./Front_Novedades
+      dockerfile: Dockerfile.dev
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-5173}:5173"
+    environment:
+      VITE_PROXY_TARGET: ${VITE_PROXY_TARGET:-http://api:3000}
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api}
+      VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
+      VITE_GOOGLE_HD: ${VITE_GOOGLE_HD:-uniautonoma.edu.co}
+    volumes:
+      - ./Front_Novedades:/app
+      - web_node_modules:/app/node_modules
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
+  api_node_modules:
+  api_uploads:
+  web_node_modules:

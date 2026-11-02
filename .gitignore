@@ -1,0 +1,3 @@
+.env
+proyecto-novedades/secrets/*.json
+!proyecto-novedades/secrets/.gitkeep
