@@ -304,7 +304,9 @@ export class ServicioGestionUsuarios {
     }
 
     // 5. Desactivar
-    await this.repoGestion.desactivar(idUsuario, idUsuarioAutor);
+    if (!await this.repoGestion.desactivar(idUsuario, idUsuarioAutor)) {
+      throw new ErrorNegocio('La cuenta cambió de estado. Actualice el directorio e inténtelo de nuevo.', 409);
+    }
   }
 
   /**
@@ -339,7 +341,24 @@ export class ServicioGestionUsuarios {
       throw new ErrorNegocio('Este usuario ya está activo', 400);
     }
 
-    await this.repoGestion.reactivar(idUsuario, idUsuarioAutor);
+    if (!await this.repoGestion.reactivar(idUsuario, idUsuarioAutor)) {
+      throw new ErrorNegocio('La cuenta cambió de estado. Actualice el directorio e inténtelo de nuevo.', 409);
+    }
+  }
+
+  async eliminarSecretaria(idUsuario: number, idUsuarioAutor: number, rolUsuarioAutor: RolUsuario): Promise<void> {
+    if (rolUsuarioAutor !== RolUsuario.ADMIN) {
+      throw new ErrorAutenticacion('Solo los administradores pueden eliminar cuentas de secretaría.', 403);
+    }
+
+    const usuario = await this.repoGestion.obtenerPorId(idUsuario);
+    if (!usuario) throw new ErrorNegocio('Usuario no encontrado.', 404);
+    if (usuario.rol?.toLowerCase() !== RolUsuario.SECRETARIA || idUsuario === idUsuarioAutor) {
+      throw new ErrorAutenticacion('Este directorio solo permite eliminar cuentas de secretaría.', 403);
+    }
+    if (!await this.repoGestion.eliminarSecretaria(idUsuario, idUsuarioAutor)) {
+      throw new ErrorNegocio('Usuario no encontrado.', 404);
+    }
   }
 
   /**
@@ -411,5 +430,3 @@ export class ServicioGestionUsuarios {
     return true;
   }
 }
-
-

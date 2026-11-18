@@ -595,7 +595,8 @@ export class ServicioSolicitud {
            FROM solicitudes s
            LEFT JOIN estudiantes e ON e.cod_alumno = s.cod_alumno
            LEFT JOIN usuarios u ON u.id_usuario = e.usuario_id
-          WHERE s.id_solicitud = $1 AND s.deleted_at IS NULL`,
+          WHERE s.id_solicitud = $1 AND s.deleted_at IS NULL
+          FOR UPDATE OF s`,
         [solicitudId],
       );
 
@@ -609,17 +610,12 @@ export class ServicioSolicitud {
       this.validarTransicionEstado(estadoActual, datos.estado);
 
       // Paso 3: Actualizar solicitud (dentro de transacción)
-      // Columnas reales en BD: estado_solicitud, justificacion_detallada, updated_by, updated_at
-      // - observaciones → justificacion_detallada (campo existente en BD)
       // - aprobada_por y fecha_resolucion NO existen → se usa updated_by / updated_at
       const ahora = new Date();
       await cliente.query(
         `UPDATE solicitudes
             SET estado_solicitud      = $1,
-                justificacion_detallada = CASE
-                  WHEN $2::TEXT IS NOT NULL THEN $2::TEXT
-                  ELSE justificacion_detallada
-                END,
+                observaciones_resolucion = $2,
                 updated_by             = $3,
                 updated_at             = $4
           WHERE id_solicitud = $5 AND deleted_at IS NULL`,
@@ -851,4 +847,3 @@ export class ServicioSolicitud {
     return detalle;
   }
 }
-

@@ -15,7 +15,7 @@
 import { Router }                               from 'express';
 import { ControladorUsuario }                  from '../controllers/UsuarioController';
 import { ControladorGestionUsuarios }          from '../controllers/GestionUsuariosController';
-import { validarEsquema, verificarToken }     from '../middlewares/authMiddleware';
+import { RolUsuario, validarEsquema, verificarRol, verificarToken }     from '../middlewares/authMiddleware';
 import { esquemaCrearUsuario }                from '../schemas/usuario.schema';
 
 const enrutadorUsuarios  = Router();
@@ -476,6 +476,7 @@ enrutadorUsuarios.put('/:id/desactivar', verificarToken, controladorGestion.desa
  *         description: Sin permisos (solo ADMIN)
  */
 enrutadorUsuarios.put('/:id/reactivar', verificarToken, controladorGestion.reactivarUsuario);
+enrutadorUsuarios.delete('/:id', verificarToken, verificarRol(RolUsuario.ADMIN), controladorGestion.eliminarSecretaria);
 
 /**
  * @swagger
@@ -522,5 +523,3 @@ enrutadorUsuarios.put('/:id/reactivar', verificarToken, controladorGestion.react
 enrutadorUsuarios.put('/:id/estado-matricula', verificarToken, controladorGestion.actualizarEstadoMatricula);
 
 export default enrutadorUsuarios;
-
-

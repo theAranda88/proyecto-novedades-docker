@@ -44,6 +44,15 @@ type FilaEstudianteBasica = {
   jornada:                 string;
 };
 
+export async function cuentaTieneAcceso(idUsuario: number): Promise<boolean> {
+  if (!Number.isSafeInteger(idUsuario) || idUsuario <= 0) return false;
+  const { rowCount } = await pool.query(
+    'SELECT 1 FROM usuarios WHERE id_usuario = $1 AND activo IS TRUE AND deleted_at IS NULL',
+    [idUsuario],
+  );
+  return rowCount === 1;
+}
+
 export class RepositorioUsuario {
 
   /**
@@ -289,7 +298,7 @@ export class RepositorioUsuario {
 
   /**
    * Verifica si un email ya existe en la tabla usuarios.
-   * Considera soft delete (deleted_at IS NULL).
+   * Los identificadores se reservan también para las cuentas eliminadas.
    *
    * @param email - Email institucional
    * @returns {Promise<boolean>} true si existe, false en caso contrario
@@ -300,7 +309,6 @@ export class RepositorioUsuario {
         `SELECT EXISTS(
            SELECT 1 FROM usuarios
            WHERE email_institucional = $1
-             AND deleted_at IS NULL
          ) AS existe`,
         [email],
       );
@@ -312,7 +320,7 @@ export class RepositorioUsuario {
 
   /**
    * Verifica si un código estudiantil ya existe en la tabla usuarios.
-   * Considera soft delete (deleted_at IS NULL).
+   * Los identificadores se reservan también para las cuentas eliminadas.
    *
    * @param codigoEstudiantil - Código institucional
    * @returns {Promise<boolean>} true si existe, false en caso contrario
@@ -323,7 +331,6 @@ export class RepositorioUsuario {
         `SELECT EXISTS(
            SELECT 1 FROM usuarios
            WHERE codigo_estudiantil = $1
-             AND deleted_at IS NULL
          ) AS existe`,
         [codigoEstudiantil],
       );
@@ -738,7 +745,8 @@ export class RepositorioGestionUsuarios {
 
       if (actualizaciones.length === 0) return;
 
-      actualizaciones.push(`updated_at = NOW()`);
+      valores.push(idAuditoria);
+      actualizaciones.push('updated_by = $' + paramCount, 'updated_at = NOW()');
 
       await pool.query(
         `UPDATE usuarios
@@ -746,39 +754,25 @@ export class RepositorioGestionUsuarios {
           WHERE id_usuario = $1`,
         valores,
       );
-
-      // Registrar en auditoría
-      await this.registrarAuditoria(
-        'USUARIO_ACTUALIZADO',
-        idAuditoria,
-        idUsuario,
-        datos,
-      );
     } catch (error) {
       throw new ErrorBaseDatos(`Error al actualizar usuario: ${(error as Error).message}`);
     }
   }
 
   /**
-   * Desactiva un usuario (soft delete).
+   * Desactiva un usuario conservándolo en el directorio.
    * Establece activo = false y registra en auditoría.
    */
-  async desactivar(idUsuario: number, idAuditoria: number): Promise<void> {
+  async desactivar(idUsuario: number, idAuditoria: number): Promise<boolean> {
     try {
-      await pool.query(
+      const { rowCount } = await pool.query(
         `UPDATE usuarios
-            SET activo = false,
+            SET activo = false, updated_by = $2,
                 updated_at = NOW()
-          WHERE id_usuario = $1`,
-        [idUsuario],
+          WHERE id_usuario = $1 AND deleted_at IS NULL AND activo IS TRUE`,
+        [idUsuario, idAuditoria],
       );
-
-      await this.registrarAuditoria(
-        'USUARIO_DESACTIVADO',
-        idAuditoria,
-        idUsuario,
-        { activo: false },
-      );
+      return rowCount === 1;
     } catch (error) {
       throw new ErrorBaseDatos(`Error al desactivar usuario: ${(error as Error).message}`);
     }
@@ -787,24 +781,37 @@ export class RepositorioGestionUsuarios {
   /**
    * Reactiva un usuario (si fue desactivado).
    */
-  async reactivar(idUsuario: number, idAuditoria: number): Promise<void> {
+  async reactivar(idUsuario: number, idAuditoria: number): Promise<boolean> {
     try {
-      await pool.query(
+      const { rowCount } = await pool.query(
         `UPDATE usuarios
-            SET activo = true,
+            SET activo = true, updated_by = $2,
                 updated_at = NOW()
-          WHERE id_usuario = $1`,
-        [idUsuario],
+          WHERE id_usuario = $1 AND deleted_at IS NULL AND activo IS FALSE`,
+        [idUsuario, idAuditoria],
       );
-
-      await this.registrarAuditoria(
-        'USUARIO_REACTIVADO',
-        idAuditoria,
-        idUsuario,
-        { activo: true },
-      );
+      return rowCount === 1;
     } catch (error) {
       throw new ErrorBaseDatos(`Error al reactivar usuario: ${(error as Error).message}`);
+    }
+  }
+
+  async eliminarSecretaria(idUsuario: number, idAuditoria: number): Promise<boolean> {
+    try {
+      const { rowCount } = await pool.query(
+        'WITH eliminada AS (' +
+        '  UPDATE usuarios SET deleted_at = NOW(), updated_at = NOW(), updated_by = $2 ' +
+        "  WHERE id_usuario = $1 AND rol = 'SECRETARIA' AND deleted_at IS NULL " +
+        '  RETURNING id_usuario, nombre_completo, updated_by' +
+        ') INSERT INTO auditoria_eventos (entidad, entidad_id, referencia, accion, actor_id, actor_nombre, actor_rol) ' +
+        "SELECT 'usuario', e.id_usuario, e.nombre_completo, 'usuario_eliminado', " +
+        '       e.updated_by, a.nombre_completo, a.rol::text ' +
+        'FROM eliminada e LEFT JOIN usuarios a ON a.id_usuario = e.updated_by',
+        [idUsuario, idAuditoria],
+      );
+      return rowCount === 1;
+    } catch (error) {
+      throw new ErrorBaseDatos('Error al eliminar la cuenta: ' + (error as Error).message);
     }
   }
 

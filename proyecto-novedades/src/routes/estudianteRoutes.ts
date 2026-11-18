@@ -125,6 +125,13 @@ enrutadorEstudiante.get(
 );
 
 enrutadorEstudiante.get(
+  '/horario/:codigo_estudiantil',
+  verificarToken,
+  verificarRol(RolUsuario.SECRETARIA, RolUsuario.ADMIN),
+  controladorEst.obtenerHorarioPorCodigo,
+);
+
+enrutadorEstudiante.get(
   '/:codigo_estudiantil/materias',
   verificarToken,
   verificarRol(RolUsuario.ESTUDIANTE),
@@ -236,4 +243,3 @@ enrutadorEstudiante.post(
 );
 
 export default enrutadorEstudiante;
-

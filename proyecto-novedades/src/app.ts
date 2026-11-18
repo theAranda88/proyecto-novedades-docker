@@ -15,6 +15,7 @@ import enrutadorUsuarios          from './routes/usuarioRoutes';
 import enrutadorDashboard         from './routes/dashboardRoutes';
 import enrutadorNotificaciones    from './routes/notificacionRoutes';
 import enrutadorMigraciones       from './routes/migracionRoutes';
+import enrutadorAuditoria         from './routes/auditoriaRoutes';
 import { manejadorErroresGlobal } from './middlewares/errorHandler';
 import { configurarSwagger }      from './config/swagger';
 
@@ -162,6 +163,7 @@ app.use('/api/grupos',          enrutadorGrupos);
 app.use('/api/usuarios',        enrutadorUsuarios);
 app.use('/api/notificaciones',  enrutadorNotificaciones);
 app.use('/api/admin/migracion', enrutadorMigraciones);
+app.use('/api/admin/auditoria', enrutadorAuditoria);
 
 // ------------------------------------------------------------
 // RUTA NO ENCONTRADA — 404

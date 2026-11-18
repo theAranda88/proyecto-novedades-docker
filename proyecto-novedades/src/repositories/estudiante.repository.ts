@@ -95,6 +95,22 @@ export class RepositorioEstudiante {
     }
   }
 
+  async buscarUsuarioIdPorCodigoEstudiantil(codigoEstudiantil: string): Promise<number | null> {
+    try {
+      const resultado = await pool.query<{ usuario_id: number }>(
+        `SELECT e.usuario_id
+           FROM estudiantes e
+          WHERE (e.cod_alumno = $1 OR e.codigo_estudiantil = $1)
+            AND e.deleted_at IS NULL
+          LIMIT 1`,
+        [codigoEstudiantil],
+      );
+      return resultado.rows[0]?.usuario_id ?? null;
+    } catch (error) {
+      throw new ErrorBaseDatos(`Error al buscar estudiante por código: ${(error as Error).message}`);
+    }
+  }
+
   /**
    * Lista los grupos de curso disponibles con cupos > 0.
    * Se usa para poblar los dropdowns "Curso actual" y "Nuevo curso solicitado"
@@ -112,25 +128,40 @@ export class RepositorioEstudiante {
    * @throws {ErrorBaseDatos} Si falla la consulta SQL
    */
   async listarGruposDisponibles(
-    periodo:  string,
+    periodo?: string,
     cursoId?: number,
     jornada?: string,
   ): Promise<FilaGrupoCurso[]> {
     try {
-      const params: (string | number)[] = [periodo];
-      const condiciones: string[] = [
-        'g.periodo = $1',
-        'g.activo  = TRUE',
-      ];
+      const params: (string | number)[] = [];
+      const filtrosPeriodoReciente: string[] = ['g2.activo = TRUE'];
+      const condiciones: string[] = ['g.activo = TRUE'];
+
+      if (periodo) {
+        params.push(periodo);
+        condiciones.push('g.periodo = $1');
+      }
 
       if (cursoId) {
         params.push(cursoId);
-        condiciones.push(`g.curso_id = $${params.length}`);
+        const parametro = `$${params.length}`;
+        condiciones.push(`g.curso_id = ${parametro}`);
+        filtrosPeriodoReciente.push(`g2.curso_id = ${parametro}`);
       }
 
       if (jornada) {
         params.push(jornada);
-        condiciones.push(`g.jornada = $${params.length}`);
+        const parametro = `$${params.length}`;
+        condiciones.push(`g.jornada = ${parametro}`);
+        filtrosPeriodoReciente.push(`g2.jornada = ${parametro}`);
+      }
+
+      if (!periodo) {
+        condiciones.push(`g.periodo = (
+              SELECT MAX(g2.periodo)
+                FROM grupos_curso g2
+               WHERE ${filtrosPeriodoReciente.join(' AND ')}
+            )`);
       }
 
       const resultado = await pool.query<FilaGrupoCurso>(
@@ -271,4 +302,3 @@ export class RepositorioEstudiante {
     }
   }
 }
-

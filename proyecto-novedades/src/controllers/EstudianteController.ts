@@ -16,6 +16,7 @@ export class ControladorEstudiante {
     this.servicioEstudiante = new ServicioEstudiante();
     this.obtenerPerfil      = this.obtenerPerfil.bind(this);
     this.obtenerMateriasMatriculadas = this.obtenerMateriasMatriculadas.bind(this);
+    this.obtenerHorarioPorCodigo = this.obtenerHorarioPorCodigo.bind(this);
     this.listarGrupos       = this.listarGrupos.bind(this);
     this.subirAdjunto       = this.subirAdjunto.bind(this);
   }
@@ -84,12 +85,42 @@ export class ControladorEstudiante {
   }
 
   /**
+   * GET /api/estudiantes/horario/:codigo_estudiantil
+   * Devuelve la carga académica del estudiante consultado por Secretaría o ADMIN.
+   */
+  async obtenerHorarioPorCodigo(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const codigoEstudiantil = req.params['codigo_estudiantil'];
+      if (typeof codigoEstudiantil !== 'string' || !codigoEstudiantil) {
+        RespuestaUtil.error(res, 'El código estudiantil es obligatorio', 400);
+        return;
+      }
+
+      const materias = await this.servicioEstudiante.obtenerMateriasMatriculadasPorCodigo(
+        codigoEstudiantil,
+      );
+
+      RespuestaUtil.exito(
+        res,
+        materias.length > 0
+          ? `${materias.length} materia(s) matriculada(s) encontradas`
+          : 'El estudiante no tiene materias matriculadas en este momento',
+        materias,
+        200,
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * GET /api/grupos?periodo=2026-1&curso_id=1&jornada=manana
    * Lista los grupos de curso disponibles (cupos > 0) para poblar
    * los dropdowns "Curso Actual" y "Nuevo Curso Solicitado" del formulario.
    *
    * Query params:
-   * - periodo (requerido): Periodo académico en formato AAAA-N
+   * - periodo (opcional): Periodo académico en formato AAAA-N. Si se omite,
+   *   se usa el periodo más reciente con grupos activos para los filtros indicados.
    * - curso_id (opcional): Filtrar por ID de curso
    * - jornada (opcional): Filtrar por jornada (manana/tarde/noche)
    *
@@ -97,14 +128,9 @@ export class ControladorEstudiante {
    */
   async listarGrupos(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const periodo = req.query.periodo as string;
-
-      if (!periodo) {
-        RespuestaUtil.error(
-          res,
-          'El parámetro "periodo" es obligatorio. Ej: ?periodo=2026-1',
-          400,
-        );
+      const periodo = typeof req.query.periodo === 'string' ? req.query.periodo : undefined;
+      if (periodo && !/^\d{4}-[1-3]$/.test(periodo)) {
+        RespuestaUtil.error(res, 'Formato de periodo inválido. Use AAAA-N (ej: 2026-1)', 400);
         return;
       }
 
@@ -124,8 +150,10 @@ export class ControladorEstudiante {
       RespuestaUtil.exito(
         res,
         grupos.length > 0
-          ? `${grupos.length} grupo(s) disponible(s) para el periodo ${periodo}`
-          : `No hay grupos disponibles con los filtros indicados para el periodo ${periodo}`,
+          ? `${grupos.length} grupo(s) disponible(s)${periodo ? ` para el periodo ${periodo}` : ''}`
+          : periodo
+            ? `No hay grupos disponibles con los filtros indicados para el periodo ${periodo}`
+            : 'No hay grupos activos disponibles con los filtros indicados',
         grupos,
         200,
       );
@@ -189,4 +217,3 @@ export class ControladorEstudiante {
     }
   }
 }
-

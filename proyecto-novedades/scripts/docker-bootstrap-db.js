@@ -102,6 +102,7 @@ async function main() {
       }
     }
 
+    await ejecutarArchivo('013_auditoria_operativa.sql');
     console.log('\n✓ Bootstrap de base de datos finalizado\n');
   } catch (error) {
     console.error('✗ Bootstrap de BD falló:', error.message);

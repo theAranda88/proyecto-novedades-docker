@@ -4,7 +4,7 @@
 import { Server as HTTPServer } from 'http';
 import { Server as SocketIOServer, Socket } from 'socket.io';
 import jwt from 'jsonwebtoken';
-import { ErrorAutenticacion } from '../middlewares/errorHandler';
+import { cuentaTieneAcceso } from '../repositories/usuario.repository';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'tu_secreto_super_seguro';
 
@@ -46,7 +46,7 @@ export function inicializarSocket(httpServer: HTTPServer): SocketIOServer {
   // ─────────────────────────────────────────────────────────────────────────────
   // MIDDLEWARE: Validar JWT en conexión
   // ─────────────────────────────────────────────────────────────────────────────
-  io.use((socket, next) => {
+  io.use(async (socket, next) => {
     const token = socket.handshake.auth.token;
 
     if (!token) {
@@ -54,7 +54,10 @@ export function inicializarSocket(httpServer: HTTPServer): SocketIOServer {
     }
 
     try {
-      const decoded = jwt.verify(token, JWT_SECRET) as { id_usuario: number; rol: string };
+      const decoded = jwt.verify(token, JWT_SECRET) as { id_usuario: number; rol: string; primer_login?: boolean };
+      if (decoded.primer_login || !await cuentaTieneAcceso(Number(decoded.id_usuario))) {
+        return next(new Error('La cuenta no tiene acceso.'));
+      }
       socket.data.usuarioId = decoded.id_usuario;
       socket.data.rol = decoded.rol;
       socket.join(`usuario-${decoded.id_usuario}`);
@@ -156,4 +159,3 @@ export function obtenerUsuariosConectados(): Map<number, number> {
   });
   return resultado;
 }
-
