@@ -7,7 +7,7 @@
       <AppSidebar @logout="handleLogout" />
     </template>
 
-    <div class="max-w-3xl mx-auto space-y-6">
+    <div class="mx-auto max-w-5xl space-y-5">
 
       <Transition
         enter-active-class="transition duration-300 ease-out"
@@ -77,7 +77,11 @@
 
       <QuickHelp :tipo-solicitud="form.tipoSolicitud" />
 
-      <AcademicInfo :student="authStore.student" />
+      <AcademicInfo
+        :student="student"
+        :loading="loadingPerfilAcademico"
+        :error="errorPerfilAcademico"
+      />
 
       <ApplicationDetails
         v-model="form"
@@ -89,9 +93,9 @@
       <AttachedDocuments v-model="form.archivos" />
 
       <!-- Footer -->
-      <div class="flex items-center justify-between pb-8">
+      <div class="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
         <p class="text-xs text-slate-400">Campos obligatorios marcados con asterisco (*)</p>
-        <div class="flex items-center gap-3">
+        <div class="flex flex-wrap items-center gap-3">
           <button
             class="px-4 py-2.5 text-sm font-medium text-slate-600 border border-slate-300
                    rounded-lg hover:bg-slate-50 transition-colors"
@@ -100,13 +104,15 @@
             Cancelar y Volver
           </button>
           <button
-            class="flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white
-                   bg-[var(--color-orange)] rounded-lg hover:bg-[var(--color-orange-dark)] active:bg-[var(--color-orange-dark)] transition-colors
+            class="flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-[#172f48]
+                   bg-[var(--color-orange)] rounded-lg hover:bg-[#f6be86] active:bg-[#f6be86] transition-colors
                    disabled:opacity-50 disabled:cursor-not-allowed"
             :disabled="!formularioValido || isSubmitting"
+            :aria-busy="isSubmitting"
             @click="handleSubmit"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <Cargando v-if="isSubmitting" decorativo />
+            <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11zM21.854 2.147l-10.94 10.939"/>
             </svg>
             {{ isSubmitting ? 'Enviando...' : 'Enviar Solicitud' }}
@@ -143,6 +149,8 @@ const route = useRoute()
 const authStore = useAuthStore()
 const { student } = storeToRefs(authStore)
 const isSubmitting = ref(false)
+const loadingPerfilAcademico = ref(false)
+const errorPerfilAcademico = ref('')
 const toast = ref({
   visible: false,
   type: 'error' as 'error' | 'success',
@@ -181,21 +189,33 @@ const conflictoValidacion = ref<{
   horaFin?: string
 } | null>(null)
 
-// Cargar el tipo de solicitud desde query params si existe
-onMounted(() => {
+// Cargar el perfil académico también al abrir el formulario para renovar la sesión guardada.
+onMounted(async () => {
   const tipoParam = route.query.tipo as string
   if (tipoParam) {
     console.log('📋 Tipo de solicitud desde acciones rápidas:', tipoParam)
     form.value.tipoSolicitud = tipoParam as TipoTramite
   }
 
-  estudianteService.getMateriasMatriculadas()
-    .then((materias) => {
-      materiasMatriculadasVista.value = materias
-    })
-    .catch(() => {
-      materiasMatriculadasVista.value = []
-    })
+  loadingPerfilAcademico.value = true
+  errorPerfilAcademico.value = ''
+  try {
+    await authStore.cargarPerfilAcademico()
+  } catch (error: unknown) {
+    console.error('❌ No se pudo actualizar el perfil académico al abrir la solicitud:', error)
+    errorPerfilAcademico.value =
+      (error as { message?: string })?.message
+      || 'No se pudieron cargar los datos académicos. Verifique que su perfil esté registrado.'
+  } finally {
+    loadingPerfilAcademico.value = false
+  }
+
+  try {
+    materiasMatriculadasVista.value = await estudianteService.getMateriasMatriculadas()
+  } catch (error) {
+    console.error('❌ No se pudo cargar el horario académico del formulario:', error)
+    materiasMatriculadasVista.value = []
+  }
 })
 
 const formularioValido = computed(() => {

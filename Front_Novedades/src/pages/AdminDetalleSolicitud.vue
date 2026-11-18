@@ -1,21 +1,16 @@
 <template>
-  <SecretariaLayout>
+  <component :is="esAdmin ? AdminLayout : SecretariaLayout">
 
     <!-- ── Topbar de la página ── -->
-    <div class="flex items-center justify-between mb-6">
+    <div class="banda-institucional mb-6 rounded-2xl px-4 py-5 sm:px-6">
       <!-- Volver + ID + estado -->
-      <div class="flex items-center gap-4">
-        <button
-          @click="router.back()"
-          class="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 transition-colors"
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-            stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-          Volver al Listado
-        </button>
+      <div class="relative flex flex-wrap items-center gap-4">
+        <RouterLink :to="volver" class="flex items-center gap-1.5 text-sm font-semibold text-blue-100 hover:underline">
+          <span aria-hidden="true">‹</span> Volver al listado
+        </RouterLink>
 
         <div class="flex items-center gap-3">
-          <span class="text-[17px] font-bold text-slate-800 tracking-tight">{{ solicitud?.id ?? route.params.id }}</span>
+          <span class="text-[17px] font-bold text-white tracking-tight">{{ solicitud?.id ?? route.params.id }}</span>
           <span :class="['text-[11.5px] font-bold px-2.5 py-1 rounded-full', estadoBadge(solicitud?.estado)]">
             {{ solicitud?.estado ?? '...' }}
           </span>
@@ -25,17 +20,7 @@
     </div>
 
     <!-- Skeleton global -->
-    <div v-if="isLoading" class="grid grid-cols-[1fr_300px] gap-5">
-      <div class="space-y-4">
-        <div class="h-44 bg-white border border-slate-200 rounded-2xl animate-pulse" />
-        <div class="h-64 bg-white border border-slate-200 rounded-2xl animate-pulse" />
-        <div class="h-48 bg-white border border-slate-200 rounded-2xl animate-pulse" />
-      </div>
-      <div class="space-y-4">
-        <div class="h-72 bg-white border border-slate-200 rounded-2xl animate-pulse" />
-        <div class="h-56 bg-white border border-slate-200 rounded-2xl animate-pulse" />
-      </div>
-    </div>
+    <Cargando v-if="isLoading" texto="Cargando detalle de la solicitud…" />
 
     <!-- Error -->
     <div v-else-if="error" class="p-5 bg-red-50 border border-red-200 rounded-2xl text-sm text-red-600">
@@ -43,10 +28,10 @@
     </div>
 
     <!-- Contenido -->
-    <div v-else-if="solicitud" class="grid grid-cols-[1fr_300px] gap-5 items-start">
+    <div v-else-if="solicitud" class="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(18rem,21rem)]">
 
       <!-- ── Columna izquierda ── -->
-      <div class="space-y-4">
+      <div class="min-w-0 space-y-4">
 
         <!-- Card: Información del Estudiante -->
         <section class="bg-white border-2 border-indigo-200 rounded-2xl overflow-hidden shadow-sm">
@@ -58,14 +43,14 @@
             <h2 class="text-[13.5px] font-bold text-slate-800">Información del Estudiante</h2>
           </div>
 
-          <div class="px-6 py-5 flex items-center gap-6">
+          <div class="flex flex-col gap-4 px-4 py-5 sm:flex-row sm:items-center sm:px-6">
             <!-- Avatar -->
             <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-slate-300 to-slate-500 flex items-center justify-center text-white text-xl font-bold shrink-0 overflow-hidden shadow-sm">
               <span>{{ solicitud.estudiante?.nombre?.charAt(0) ?? '?' }}</span>
             </div>
 
             <!-- Grid de datos -->
-            <div class="grid grid-cols-3 gap-x-8 gap-y-4 flex-1">
+            <div class="grid min-w-0 flex-1 gap-x-5 gap-y-4 break-words sm:grid-cols-2 lg:grid-cols-3">
               <div>
                 <p class="text-[9.5px] font-bold uppercase tracking-wider text-slate-400 mb-1">Nombre Completo</p>
                 <p class="text-[13px] font-semibold text-slate-800">{{ solicitud.estudiante?.nombre ?? '—' }}</p>
@@ -94,6 +79,58 @@
           </div>
         </section>
 
+        <!-- Horario del estudiante -->
+        <section class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+          <div class="flex items-center gap-2.5 px-6 py-4 border-b border-slate-100">
+            <div class="w-7 h-7 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-600">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="17" rx="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+            </div>
+            <h2 class="text-[13.5px] font-bold text-slate-800">Horario actual del estudiante</h2>
+          </div>
+
+          <div class="px-6 py-5">
+            <Cargando v-if="horarioLoading" texto="Cargando horario…" />
+            <p v-else-if="horarioError" class="text-sm text-red-600">{{ horarioError }}</p>
+            <p v-else-if="materiasHorario.length === 0" class="text-sm text-slate-500">
+              El estudiante no tiene materias matriculadas actualmente.
+            </p>
+            <div v-else class="overflow-x-auto">
+              <table class="w-full min-w-[620px] text-left">
+                <thead>
+                  <tr class="border-b border-slate-100 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    <th class="pb-2 pr-4">Materia</th>
+                    <th class="pb-2 pr-4">Día y hora</th>
+                    <th class="pb-2 pr-4">Jornada</th>
+                    <th class="pb-2 pr-4">Grupo / aula</th>
+                    <th class="pb-2">Periodo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="materia in materiasHorario" :key="`${materia.id}-${materia.periodo}`" class="border-b border-slate-50 last:border-0">
+                    <td class="py-3 pr-4">
+                      <p class="text-[12px] font-semibold text-slate-700">{{ materia.nombre_curso }}</p>
+                      <p class="text-[11px] text-slate-400">{{ materia.cod_curso }}</p>
+                    </td>
+                    <td class="py-3 pr-4 text-[12px] text-slate-600">
+                      {{ materia.dia_semana }} · {{ materia.hora_inicio?.slice(0, 5) || "—" }}–{{ materia.hora_fin?.slice(0, 5) || "—" }}
+                    </td>
+                    <td class="py-3 pr-4 text-[12px] text-slate-600">{{ materia.jornada }}</td>
+                    <td class="py-3 pr-4 text-[12px] text-slate-600">
+                      {{ materia.codigo_grupo }}<span v-if="materia.aula"> · {{ materia.aula }}</span>
+                    </td>
+                    <td class="py-3 text-[12px] text-slate-600">{{ materia.periodo || '—' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
         <!-- Card: Detalles de la Solicitud -->
         <section class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
           <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
@@ -109,7 +146,7 @@
 
           <div class="px-6 py-5 space-y-5">
             <!-- Estados actual → solicitado -->
-            <div class="grid grid-cols-2 gap-3">
+            <div class="grid gap-3 sm:grid-cols-2">
               <div class="border border-slate-200 rounded-xl px-4 py-3">
                 <p class="text-[9.5px] font-bold uppercase tracking-wider text-slate-400 mb-2">Estado Actual</p>
                 <div class="flex items-center gap-2 text-[13px] font-semibold text-slate-700">
@@ -142,13 +179,14 @@
 
             <!-- Documentos de soporte -->
             <div>
-              <p class="text-[13px] font-bold text-slate-700 mb-3">Documentos de Soporte</p>
-              <div class="grid grid-cols-2 gap-3">
+              <p class="text-[13px] font-bold text-slate-700 mb-3">Documentos de soporte</p>
+              <p v-if="!solicitud.documentos.length" class="text-sm text-slate-600">Sin documentos adjuntos.</p>
+              <div class="grid gap-3 sm:grid-cols-2">
                 <a
                   v-for="doc in solicitud.documentos"
-                  :key="doc.nombre"
+                  :key="doc.id"
                   :href="doc.url"
-                  target="_blank"
+                  target="_blank" rel="noopener noreferrer"
                   class="flex items-center justify-between gap-3 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 hover:bg-white hover:border-indigo-200 transition-all group"
                 >
                   <div class="flex items-center gap-2.5 min-w-0">
@@ -162,24 +200,17 @@
               </div>
             </div>
 
-            <!-- Nota reglamento -->
-            <div v-if="solicitud.notaReglamento" class="flex items-start gap-2 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round" class="text-amber-500 shrink-0 mt-0.5">
-                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-              </svg>
-              <p class="text-[12px] text-amber-700">{{ solicitud.notaReglamento }}</p>
-            </div>
+
           </div>
         </section>
 
       </div>
 
       <!-- ── Columna derecha ── -->
-      <div class="space-y-4">
+      <div class="min-w-0 space-y-4">
 
         <!-- Panel de Resolución -->
-        <section class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        <section v-if="esEditable" class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
           <div class="flex items-center gap-2.5 px-5 py-4 border-b border-slate-100">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
               stroke-linecap="round" stroke-linejoin="round" class="text-slate-500"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
@@ -194,6 +225,7 @@
               </label>
               <textarea
                 v-model="observaciones"
+                maxlength="1000"
                 rows="5"
                 placeholder="Ingrese la justificación técnica de la aprobación o los motivos del rechazo..."
                 :class="[
@@ -217,7 +249,7 @@
                 :disabled="procesando !== null"
                 class="flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-red-200 bg-red-50 hover:bg-red-100 text-red-600 text-[13px] font-bold disabled:opacity-50 transition-all"
               >
-                <svg v-if="procesando === 'rechazar'" class="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+                <Cargando v-if="procesando === 'rechazar'" decorativo />
                 <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
                   stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
                 Rechazar
@@ -227,7 +259,7 @@
                 :disabled="procesando !== null"
                 class="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-[13px] font-bold disabled:opacity-50 transition-all"
               >
-                <svg v-if="procesando === 'aprobar'" class="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+                <Cargando v-if="procesando === 'aprobar'" decorativo />
                 <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
                   stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                 Aprobar
@@ -245,44 +277,30 @@
           </div>
 
           <div class="px-5 py-4">
-            <ol class="relative border-l border-slate-200 ml-2 space-y-4">
-              <li
-                v-for="(entrada, i) in solicitud.historial"
-                :key="i"
-                class="pl-5 relative"
-              >
-                <!-- Dot -->
-                <span
-                  :class="[
-                    'absolute -left-[5px] top-1 w-2.5 h-2.5 rounded-full border-2 border-white',
-                    entrada.activo ? 'bg-indigo-600' : 'bg-slate-300'
-                  ]"
-                />
-                <p :class="['text-[13px] font-bold', entrada.activo ? 'text-slate-800' : 'text-slate-600']">
-                  {{ entrada.titulo }}
+            <ol class="relative ml-2 space-y-5 border-l border-blue-100">
+              <li v-for="(entrada, indice) in solicitud.historial" :key="entrada.id_evento" class="relative pl-5 text-sm">
+                <span aria-hidden="true" class="absolute -left-[5px] top-1.5 size-2.5 rounded-full border-2 border-white"
+                  :class="indice === 0 ? 'bg-indigo-600' : 'bg-blue-400'"></span>
+                <p class="font-bold text-blue-700">{{ entrada.descripcion }}</p>
+                <p class="mt-1 text-xs text-slate-600">
+                  <span v-if="entrada.estado_anterior">{{ etiquetaSolicitud(entrada.estado_anterior) }} → </span>
+                  {{ etiquetaSolicitud(entrada.estado_nuevo) }}
                 </p>
-                <p class="text-[11.5px] text-slate-400 mt-0.5">{{ entrada.fecha }}</p>
-                <p class="text-[11.5px] text-slate-500 mt-0.5">{{ entrada.actor }}</p>
+                <p class="mt-1 text-xs text-slate-600">
+                  {{ formatearFecha(entrada.fecha) }} · {{ entrada.actor || 'Sin responsable registrado' }}
+                </p>
+                <p v-if="entrada.observacion" class="mt-2 rounded-lg bg-blue-50 p-3 text-xs leading-relaxed text-slate-700 whitespace-pre-line">{{ entrada.observacion }}</p>
               </li>
             </ol>
-
-            <button class="mt-4 text-[12px] font-semibold text-indigo-600 hover:text-indigo-700 transition-colors">
-              Ver registro de auditoría completo
-            </button>
+            <RouterLink
+              v-if="esAdmin"
+              :to="{ name: 'AdminAuditoria', query: { referencia: solicitud.id } }"
+              class="mt-4 inline-block text-sm font-semibold text-blue-700 underline underline-offset-2"
+            >Consultar en auditoría</RouterLink>
           </div>
         </section>
 
-        <!-- Guía de decisión -->
-        <section v-if="solicitud.guiaDecision" class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-          <div class="flex items-center gap-2.5 px-5 py-4 border-b border-slate-100">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round" class="text-slate-500"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            <h2 class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Guía de Decisión</h2>
-          </div>
-          <div class="px-5 py-4">
-            <p class="text-[12px] text-slate-600 leading-relaxed">{{ solicitud.guiaDecision }}</p>
-          </div>
-        </section>
+
 
       </div>
 
@@ -299,6 +317,8 @@
     >
       <div
         v-if="toast"
+        role="status"
+        @click="toast = null"
         :class="[
           'fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2.5 px-5 py-3 rounded-2xl shadow-xl text-sm font-semibold text-white z-50',
           toast.tipo === 'exito' ? 'bg-green-600' : 'bg-red-600'
@@ -312,181 +332,179 @@
       </div>
     </Transition>
 
-  </SecretariaLayout>
+  </component>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { computed, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import solicitudesService from '../services/solicitudesService'
-import usuariosService from '../services/usuariosService'
-import type { SolicitudDetalle, EstadoSolicitudAdmin } from '../types'
+import estudianteService from '../services/estudianteService'
+import AdminLayout from '../components/layout/AdminLayout.vue'
 import SecretariaLayout from '../components/layout/SecretariaLayout.vue'
+import { etiquetaSolicitud } from '../utils/solicitudDisplay'
+import http from '../utils/httpClient'
+import type { MateriaMatriculada } from '../types'
 
-// ─── Router ──────────────────────────────────────────────────────────────────
-const router = useRouter()
-const route  = useRoute()
-const id     = route.params.id as string
+interface GrupoDetalle {
+  nombre_curso: string
+  codigo_grupo: string
+}
 
-// ─── Estado ──────────────────────────────────────────────────────────────────
-const solicitud      = ref<SolicitudDetalle | null>(null)
-const isLoading      = ref(false)
-const error          = ref<string | null>(null)
-const observaciones  = ref('')
-const errObservaciones = ref('')
-const procesando     = ref<'aprobar' | 'rechazar' | null>(null)
-const toast          = ref<{ tipo: 'exito' | 'error'; mensaje: string } | null>(null)
+interface Detalle {
+  id_solicitud: number
+  codigo_solicitud: string
+  estado_solicitud: string
+  fecha_creacion: string
+  estudiante: {
+    cod_alumno: string
+    codigo_estudiantil: string
+    nombre_completo: string
+    correo_institucional: string
+    semestre_actual: number
+    promedio_acumulado: string | number | null
+    programa: string
+  }
+  detalle_solicitud: {
+    tipo_novedad: string
+    motivo_novedad: string | null
+    justificacion_detallada: string | null
+    observaciones_resolucion: string | null
+    grupo_actual: GrupoDetalle | null
+    grupo_solicitado: GrupoDetalle | null
+  }
+  documentos: { id_documento: number; nombre_archivo: string; url_archivo: string }[]
+  historial: {
+    id_evento: number | string
+    descripcion: string
+    observacion: string | null
+    estado_nuevo: string
+    estado_anterior: string | null
+    fecha: string
+    actor: string | null
+  }[]
+}
 
-// ─── Fetch ───────────────────────────────────────────────────────────────────
-onMounted(async () => {
-  isLoading.value = true
-  try {
-    const raw = await solicitudesService.getDetalle(id) as unknown as SolicitudDetalle & Record<string, any>
-    console.log('📋 Detalle solicitud raw:', JSON.stringify(raw, null, 2))
-
-    // Mapear campos del backend al formato que espera el template
-    raw.tipo = raw.tipo ?? raw.tipo_solicitud ?? '—'
-    raw.estado = mapearEstado(raw.estado)
-    raw.radicadoFecha = raw.radicadoFecha ?? formatearFecha(raw.created_at)
-    raw.justificacion = raw.justificacion ?? raw.motivo ?? '—'
-    raw.estadoActual = raw.estadoActual ?? raw.estado ?? '—'
-    raw.estadoSolicitado = raw.estadoSolicitado ?? raw.tipo_solicitud?.replace(/_/g, ' ') ?? '—'
-
-    const estudianteBase = {
-      nombre: raw.estudiante?.nombre ?? raw.estudiante_nombre ?? raw.nombre_estudiante ?? raw.nombre ?? '—',
-      codigo: raw.estudiante?.codigo ?? raw.estudiante_codigo ?? raw.codigo_estudiantil ?? raw.cod_alumno ?? '—',
-      programa: raw.estudiante?.programa ?? raw.programa ?? raw.nombre_programa ?? raw.carrera ?? '—',
-      semestre: raw.estudiante?.semestre ?? raw.semestre ?? 0,
-      promedio: raw.estudiante?.promedio ?? raw.promedio ?? '—',
-      email: raw.estudiante?.email ?? raw.email ?? raw.email_institucional ?? '—',
-    }
-
-    // Cargar datos reales del estudiante usando cod_alumno
-    const codAlumno = raw.cod_alumno ?? raw.codigo_estudiantil
-    if (codAlumno) {
-      try {
-        const resultado = await usuariosService.buscarUsuarios(codAlumno, 1)
-        console.log('👤 Resultado búsqueda estudiante:', JSON.stringify(resultado, null, 2))
-        const usuario = resultado.resultados?.[0]
-        if (usuario) {
-          raw.estudiante = {
-            nombre:   usuario.nombre_completo ?? usuario.nombre ?? estudianteBase.nombre,
-            codigo:   usuario.codigo_estudiantil ?? usuario.codigo_institucional ?? codAlumno,
-            programa: usuario.programa ?? usuario.carrera ?? estudianteBase.programa,
-            semestre: usuario.semestre ?? estudianteBase.semestre,
-            promedio: usuario.promedio ?? estudianteBase.promedio,
-            email:    usuario.email_institucional ?? usuario.email ?? estudianteBase.email,
-          }
-        } else {
-          raw.estudiante = fallbackEstudiante(raw, codAlumno, estudianteBase)
-        }
-      } catch (e) {
-        console.warn('⚠️ No se pudo buscar estudiante:', e)
-        raw.estudiante = fallbackEstudiante(raw, codAlumno, estudianteBase)
-      }
-    } else if (!raw.estudiante || !raw.estudiante.nombre) {
-      raw.estudiante = fallbackEstudiante(raw, '', estudianteBase)
-    }
-
-    solicitud.value = raw
-  } catch (err: unknown) {
-    error.value = (err as { message?: string })?.message ?? 'No se pudo cargar la solicitud.'
-  } finally {
-    isLoading.value = false
+const route = useRoute()
+const esAdmin = computed(() => route.meta.requiredRole === 'Administrador')
+const volver = computed(() => {
+  if (route.query.origen === 'historial') return { name: 'SecretariaHistorial' }
+  if (route.query.origen === 'auditoria') return { name: 'AdminAuditoria' }
+  return { name: esAdmin.value ? 'AdminDashboard' : 'SecretariaSolicitudes' }
+})
+const bruto = ref<Detalle | null>(null)
+const solicitud = computed(() => {
+  if (!bruto.value) return null
+  const { estudiante, detalle_solicitud: detalle, documentos, historial } = bruto.value
+  return {
+    id: bruto.value.codigo_solicitud,
+    estado: etiquetaSolicitud(bruto.value.estado_solicitud),
+    tipo: etiquetaSolicitud(detalle.tipo_novedad),
+    radicadoFecha: formatearFecha(bruto.value.fecha_creacion),
+    estadoActual: etiquetaGrupo(detalle.grupo_actual),
+    estadoSolicitado: etiquetaGrupo(detalle.grupo_solicitado),
+    justificacion: detalle.justificacion_detallada || 'No hay una justificación original disponible.',
+    observacion: detalle.observaciones_resolucion,
+    estudiante: {
+      nombre: estudiante.nombre_completo,
+      codigo: estudiante.codigo_estudiantil,
+      programa: estudiante.programa,
+      semestre: estudiante.semestre_actual,
+      promedio: estudiante.promedio_acumulado,
+      email: estudiante.correo_institucional,
+    },
+    documentos: documentos.map(doc => ({ id: doc.id_documento, nombre: doc.nombre_archivo, url: doc.url_archivo })),
+    historial: [...historial].reverse(),
   }
 })
+const esEditable = computed(() => ['Pendiente', 'En revisión'].includes(solicitud.value?.estado || ''))
+const id = computed(() => String(route.params.id ?? ''))
+const recarga = ref(0)
+const isLoading = ref(true)
+const error = ref('')
+const horarioLoading = ref(false)
+const horarioError = ref('')
+const materiasHorario = ref<MateriaMatriculada[]>([])
+const observaciones = ref('')
+const errObservaciones = ref('')
+const procesando = ref<'aprobar' | 'rechazar' | null>(null)
+const toast = ref<{ mensaje: string; tipo: 'exito' | 'error' } | null>(null)
+const formato = new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Bogota' })
 
-// ─── Acciones ────────────────────────────────────────────────────────────────
+watch([id, recarga], async ([solicitudId], _, onCleanup) => {
+  const controller = new AbortController()
+  onCleanup(() => controller.abort())
+  isLoading.value = true
+  error.value = ''
+  horarioError.value = ''
+  horarioLoading.value = false
+  materiasHorario.value = []
+  bruto.value = null
+
+  try {
+    const { data } = await http.get<{ datos: Detalle }>('/solicitudes/' + encodeURIComponent(solicitudId) + '/detalle', {
+      signal: controller.signal,
+    })
+    if (controller.signal.aborted) return
+    bruto.value = data.datos
+    const codigo = data.datos.estudiante.cod_alumno
+    if (!codigo) return
+
+    horarioLoading.value = true
+    isLoading.value = false
+    try {
+      const materias = await estudianteService.getHorarioPorCodigo(String(codigo))
+      if (!controller.signal.aborted) materiasHorario.value = materias
+    } catch {
+      if (!controller.signal.aborted) horarioError.value = 'No se pudo cargar el horario del estudiante.'
+    } finally {
+      if (!controller.signal.aborted) horarioLoading.value = false
+    }
+  } catch {
+    if (!controller.signal.aborted) error.value = 'No se pudo cargar la solicitud.'
+  } finally {
+    if (!controller.signal.aborted) isLoading.value = false
+  }
+}, { immediate: true })
+
 async function resolver(accion: 'aprobar' | 'rechazar') {
+  if (procesando.value || !esEditable.value) return
   errObservaciones.value = ''
-
   if (!observaciones.value.trim()) {
-    errObservaciones.value = 'Las observaciones son obligatorias antes de continuar.'
+    errObservaciones.value = 'Escribe el motivo de la decisión antes de continuar.'
     return
   }
 
+  const referencia = id.value
   procesando.value = accion
+  const estado = accion === 'aprobar' ? 'aprobada' : 'rechazada'
   try {
-    const nuevoEstado = accion === 'aprobar' ? 'aprobada' : 'rechazada'
-    await solicitudesService.actualizarEstado(id, {
-      estado: nuevoEstado,
-      observaciones: observaciones.value,
-    })
-
-    // Actualizar estado localmente
-    if (solicitud.value) {
-      solicitud.value.estado = accion === 'aprobar' ? 'Aprobada' : 'Rechazada'
-    }
-
-    mostrarToast(
-      accion === 'aprobar'
-        ? 'Solicitud aprobada correctamente.'
-        : 'Solicitud rechazada correctamente.',
-      'exito',
-    )
-
-    // Redirigir al listado tras 2 s
-    setTimeout(() => router.back(), 2000)
-  } catch (err: unknown) {
-    mostrarToast(
-      (err as { message?: string })?.message ?? 'Error al procesar la solicitud.',
-      'error',
-    )
+    await solicitudesService.actualizarEstado(referencia, { estado, observaciones: observaciones.value.trim() })
+    if (referencia !== id.value) return
+    observaciones.value = ''
+    toast.value = { mensaje: 'Solicitud ' + estado + ' correctamente.', tipo: 'exito' }
+    recarga.value++
+  } catch (err) {
+    toast.value = { mensaje: (err as { message?: string })?.message || 'No se pudo registrar la decisión.', tipo: 'error' }
   } finally {
     procesando.value = null
   }
 }
 
-function mostrarToast(mensaje: string, tipo: 'exito' | 'error') {
-  toast.value = { mensaje, tipo }
-  setTimeout(() => { toast.value = null }, 3500)
+function etiquetaGrupo(grupo: GrupoDetalle | null) {
+  return grupo ? [grupo.nombre_curso, grupo.codigo_grupo].filter(Boolean).join(' · ') : '—'
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-function fallbackEstudiante(raw: Record<string, any>, codAlumno: string, base?: Record<string, any>) {
-  return {
-    nombre:   base?.nombre ?? raw.estudiante_nombre ?? raw.nombre_estudiante ?? raw.nombre ?? '—',
-    codigo:   base?.codigo ?? raw.estudiante_codigo ?? raw.codigo_estudiantil ?? codAlumno ?? '—',
-    programa: base?.programa ?? raw.programa ?? raw.nombre_programa ?? raw.carrera ?? '—',
-    semestre: base?.semestre ?? raw.semestre ?? 0,
-    promedio: base?.promedio ?? raw.promedio ?? '—',
-    email:    base?.email ?? raw.email ?? raw.email_institucional ?? '—',
-  }
+function formatearFecha(valor: string) {
+  return Number.isFinite(Date.parse(valor)) ? formato.format(new Date(valor)) : '—'
 }
 
-function mapearEstado(estado: string): EstadoSolicitudAdmin {
-  const mapa: Record<string, EstadoSolicitudAdmin> = {
-    'PENDIENTE': 'Pendiente',
-    'EN_REVISION': 'En Revisión',
-    'EN_PROCESO': 'En proceso',
-    'APROBADA': 'Aprobada',
-    'RECHAZADA': 'Rechazada',
-    'pendiente': 'Pendiente',
-    'en_revision': 'En Revisión',
-    'en_proceso': 'En proceso',
-    'aprobada': 'Aprobada',
-    'rechazada': 'Rechazada',
+function estadoBadge(estado?: string) {
+  const colores: Record<string, string> = {
+    Aprobada: 'bg-green-100 text-green-700',
+    Rechazada: 'bg-red-100 text-red-700',
+    'En revisión': 'bg-indigo-50 text-indigo-700',
   }
-  return mapa[estado] ?? estado as EstadoSolicitudAdmin
-}
-
-function formatearFecha(fecha: string): string {
-  if (!fecha) return ''
-  try {
-    return new Date(fecha).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' })
-  } catch {
-    return fecha
-  }
-}
-
-function estadoBadge(estado?: EstadoSolicitudAdmin): string {
-  const map: Record<EstadoSolicitudAdmin, string> = {
-    'Aprobada':    'bg-green-100 text-green-700',
-    'Rechazada':   'bg-red-100 text-red-600',
-    'En proceso':  'bg-blue-100 text-blue-600',
-    'Pendiente':   'bg-slate-100 text-slate-600',
-    'En Revisión': 'bg-amber-100 text-amber-700',
-  }
-  return estado ? (map[estado] ?? 'bg-slate-100 text-slate-500') : 'bg-slate-100 text-slate-500'
+  return colores[estado || ''] || 'bg-blue-50 text-blue-700'
 }
 </script>

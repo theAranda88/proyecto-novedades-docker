@@ -208,6 +208,13 @@ const estudiantesService = {
     return []
   },
 
+  async getHorarioPorCodigo(codigoEstudiantil: string): Promise<MateriaMatriculada[]> {
+    const { data } = await http.get<{ datos: any[] }>(
+      `/estudiantes/horario/${encodeURIComponent(codigoEstudiantil)}`,
+    )
+    return normalizarListaMaterias(Array.isArray(data.datos) ? data.datos : [])
+  },
+
   /**
    * Obtiene los IDs de grupos en los que está matriculado el estudiante
    * Útil para verificar en el formulario si ya está inscrito en un grupo

@@ -29,41 +29,54 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = computed(() => !!token.value)
   const studentFirstName = computed(() => student.value?.nombre?.split(' ')[0] ?? '')
 
+  async function cargarPerfilAcademico(): Promise<void> {
+    const usuario = student.value
+    const tokenActual = token.value
+    if (usuario?.rol !== 'Estudiante' || !tokenActual || Storage.getFirstLogin()) return
+
+    const perfilAcademico = await estudianteService.getPerfilAcademico()
+    if (token.value !== tokenActual || student.value?.id !== usuario.id) return
+
+    const nombre = perfilAcademico.nombre_completo || student.value.nombre
+    const programa = perfilAcademico.programa || perfilAcademico.nombre_programa || student.value.programa || student.value.carrera
+    const codigo = perfilAcademico.cod_alumno || student.value.codigo
+
+    student.value = {
+      ...student.value,
+      nombre,
+      nombre_completo: nombre,
+      codigo,
+      cod_alumno: codigo,
+      carrera: programa,
+      programa,
+      semestre: perfilAcademico.semestre ?? student.value.semestre,
+      jornada: perfilAcademico.jornada || student.value.jornada,
+      creditos_inscritos: perfilAcademico.creditos_inscritos ?? student.value.creditos_inscritos,
+      creditos_max_permitidos: perfilAcademico.creditos_max_permitidos ?? student.value.creditos_max_permitidos,
+      estado_academico: perfilAcademico.estado_academico || student.value.estado_academico,
+      matricula_activa: perfilAcademico.matricula_activa ?? student.value.matricula_activa,
+      email_institucional: perfilAcademico.email_institucional || student.value.email_institucional,
+    }
+
+    Storage.setStudent(student.value)
+  }
+
   // ─── Acciones ───────────────────────────────────────────────
   async function login(payload: LoginPayload): Promise<{ requiresPasswordChange: boolean }> {
     isLoading.value = true
     error.value = null
     try {
-      console.log('🔐 authStore.login iniciando...')
       const response = await authApi.login(payload)
-      console.log('✅ authApi.login respondió:', response)
 
       token.value = response.token
       student.value = response.student
 
-      console.log('💾 Guardando en localStorage...')
       Storage.setToken(response.token)
       Storage.setStudent(response.student)
       Storage.setFirstLogin(response.requiresPasswordChange)
 
       try {
-        console.log('📚 Cargando perfil académico completo...')
-        const perfilAcademico = await estudianteService.getPerfilAcademico()
-        console.log('✅ Perfil académico cargado:', perfilAcademico)
-
-        if (student.value) {
-          student.value.semestre = perfilAcademico.semestre
-          student.value.programa = perfilAcademico.programa || perfilAcademico.nombre_programa
-          student.value.jornada = perfilAcademico.jornada
-          student.value.creditos_inscritos = perfilAcademico.creditos_inscritos
-          student.value.creditos_max_permitidos = perfilAcademico.creditos_max_permitidos
-          student.value.estado_academico = perfilAcademico.estado_academico
-          student.value.matricula_activa = perfilAcademico.matricula_activa
-          student.value.nombre_completo = perfilAcademico.nombre_completo
-          student.value.email_institucional = perfilAcademico.email_institucional
-
-          Storage.setStudent(student.value)
-        }
+        await cargarPerfilAcademico()
       } catch (perfilErr) {
         console.warn('⚠️ No se pudo cargar el perfil académico completo:', perfilErr)
       }
@@ -97,6 +110,12 @@ export const useAuthStore = defineStore('auth', () => {
       Storage.setStudent(response.student)
       Storage.setFirstLogin(response.requiresPasswordChange)
 
+      try {
+        await cargarPerfilAcademico()
+      } catch (perfilErr) {
+        console.warn('⚠️ No se pudo cargar el perfil académico completo:', perfilErr)
+      }
+
       return { requiresPasswordChange: response.requiresPasswordChange }
     } catch (err: unknown) {
       const apiErr = err as { message?: string; statusCode?: number }
@@ -120,22 +139,7 @@ export const useAuthStore = defineStore('auth', () => {
       
       // 📚 Cargar perfil académico completo después de cambio de contraseña
       try {
-        console.log('📚 Cargando perfil académico completo...')
-        const perfilAcademico = await estudianteService.getPerfilAcademico()
-        
-        if (student.value) {
-          student.value.semestre = perfilAcademico.semestre
-          student.value.programa = perfilAcademico.programa || perfilAcademico.nombre_programa
-          student.value.jornada = perfilAcademico.jornada
-          student.value.creditos_inscritos = perfilAcademico.creditos_inscritos
-          student.value.creditos_max_permitidos = perfilAcademico.creditos_max_permitidos
-          student.value.estado_academico = perfilAcademico.estado_academico
-          student.value.matricula_activa = perfilAcademico.matricula_activa
-          student.value.nombre_completo = perfilAcademico.nombre_completo
-          student.value.email_institucional = perfilAcademico.email_institucional
-          
-          Storage.setStudent(student.value)
-        }
+        await cargarPerfilAcademico()
       } catch (perfilErr) {
         console.warn('⚠️ No se pudo cargar el perfil académico completo:', perfilErr)
       }
@@ -158,5 +162,5 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
   }
 
-  return { token, student, mockStudent, isLoading, error, isAuthenticated, studentFirstName, login, loginWithGoogle, changePassword, logout, clearError }
+  return { token, student, mockStudent, isLoading, error, isAuthenticated, studentFirstName, login, loginWithGoogle, changePassword, cargarPerfilAcademico, logout, clearError }
 })

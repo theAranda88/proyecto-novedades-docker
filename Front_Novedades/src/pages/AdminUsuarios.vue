@@ -2,15 +2,15 @@
   <AdminLayout>
 
     <!-- ── Header ── -->
-    <div class="flex items-start justify-between mb-6">
+    <div class="banda-institucional mb-6 flex flex-wrap items-end justify-between gap-4 rounded-2xl px-5 py-7 sm:px-8">
       <div>
-        <h1 class="text-[22px] font-bold text-slate-800 tracking-tight">Directorio Académico</h1>
-        <p class="text-sm text-slate-400 mt-1">Administra únicamente las cuentas de secretaría registradas en el sistema.</p>
+        <h1 class="font-brand text-2xl text-white! sm:text-3xl">Cuentas de secretaría</h1>
+        <p class="mt-2 text-sm text-blue-100">Crea cuentas de secretaría y gestiona su acceso al portal.</p>
       </div>
       <div class="flex items-center gap-3">
         <button
           @click="abrirModal()"
-          class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[var(--color-orange)] hover:bg-[var(--color-orange-dark)] text-white text-sm font-bold shadow-md shadow-orange-200 transition-all hover:-translate-y-px active:translate-y-0"
+          class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[var(--color-orange)] hover:bg-[#f6be86] text-[#172f48] text-sm font-bold shadow-md shadow-orange-200 transition-all hover:-translate-y-px active:translate-y-0"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
             stroke-linecap="round" stroke-linejoin="round">
@@ -19,17 +19,27 @@
             <line x1="19" y1="8" x2="19" y2="14"/>
             <line x1="22" y1="11" x2="16" y2="11"/>
           </svg>
-          Nueva Secretaria
+          Nueva cuenta
         </button>
       </div>
     </div>
 
+    <section v-if="clavePendiente" aria-labelledby="entrega-credencial" class="mb-6 rounded-xl border border-[#e8c89f] bg-[#fff5e5] p-4">
+      <h2 id="entrega-credencial" class="font-bold">Entrega de contraseña temporal</h2>
+      <p class="mt-1 text-sm text-slate-700">{{ clavePendiente.mensaje }}</p>
+      <details class="mt-3 text-sm">
+        <summary class="w-fit cursor-pointer font-semibold text-blue-700">Mostrar contraseña temporal</summary>
+        <code class="mt-2 inline-block select-all break-all rounded-md bg-white px-3 py-2">{{ clavePendiente.clave }}</code>
+      </details>
+      <button type="button" class="mt-3 text-sm font-semibold text-blue-700 underline" @click="clavePendiente = null">Cerrar y ocultar contraseña</button>
+    </section>
+
     <!-- ── Stats ── -->
-    <div class="grid grid-cols-2 gap-4 mb-6">
+    <div class="mb-6 grid gap-3 sm:grid-cols-2">
       <div class="bg-white border border-slate-200 rounded-2xl px-8 py-6 shadow-sm flex items-center justify-between">
         <div>
           <p class="text-[12.5px] font-semibold text-slate-500 mb-2">Secretarias Registradas</p>
-          <div v-if="loadingStats" class="h-9 w-20 bg-slate-100 rounded-xl animate-pulse mb-1.5" />
+          <Cargando v-if="loadingStats" inline texto="Cargando…" />
           <p v-else class="text-[36px] font-bold text-slate-900 tracking-tight leading-none mb-1.5">
             {{ stats?.secretarias?.toLocaleString('es-CO') ?? '0' }}
           </p>
@@ -51,7 +61,7 @@
       <div class="bg-white border border-slate-200 rounded-2xl px-8 py-6 shadow-sm flex items-center justify-between">
         <div>
           <p class="text-[12.5px] font-semibold text-slate-500 mb-2">Rol Gestionado</p>
-          <div v-if="loadingStats" class="h-9 w-20 bg-slate-100 rounded-xl animate-pulse mb-1.5" />
+          <Cargando v-if="loadingStats" inline texto="Cargando…" />
           <p v-else class="text-[30px] font-bold text-slate-900 tracking-tight leading-none mb-1.5">Secretaria</p>
           <p class="text-[12px] text-slate-400">
             Único rol habilitado para este módulo
@@ -72,7 +82,8 @@
     <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
 
       <!-- Tabla -->
-      <table class="w-full">
+      <div class="overflow-x-auto">
+      <table class="w-full min-w-[36rem]">
         <thead>
           <tr class="border-b border-slate-100">
             <th class="text-left px-6 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">Usuario</th>
@@ -84,23 +95,8 @@
 
         <tbody>
           <!-- Skeleton -->
-          <template v-if="loadingTabla">
-            <tr v-for="i in PER_PAGE" :key="i" class="border-b border-slate-50">
-              <td class="px-6 py-3.5">
-                <div class="flex items-center gap-3">
-                  <div class="w-9 h-9 rounded-full bg-slate-100 animate-pulse shrink-0" />
-                  <div class="space-y-1.5">
-                    <div class="h-3.5 w-32 bg-slate-100 rounded animate-pulse" />
-                    <div class="h-3 w-24 bg-slate-100 rounded animate-pulse" />
-                  </div>
-                </div>
-              </td>
-              <td class="px-4 py-3.5"><div class="h-6 w-20 bg-slate-100 rounded-full animate-pulse" /></td>
-              <td class="px-4 py-3.5"><div class="h-4 w-32 bg-slate-100 rounded animate-pulse" /></td>
-              <td class="px-4 py-3.5"><div class="h-4 w-16 bg-slate-100 rounded animate-pulse" /></td>
-              <td class="px-6 py-3.5"><div class="h-4 w-16 bg-slate-100 rounded animate-pulse ml-auto" /></td>
-            </tr>
-          </template>
+          <tr v-if="loadingTabla"><td colspan="4"><Cargando texto="Cargando cuentas de secretaría…" /></td></tr>
+          <tr v-else-if="!usuarios.length"><td colspan="4" class="p-6 text-center text-sm text-slate-600">No hay cuentas para mostrar.</td></tr>
 
           <!-- Datos -->
           <template v-else>
@@ -152,43 +148,50 @@
                 </div>
               </td>
 
-              <!-- Acciones -->
               <td class="px-6 py-3.5">
                 <div class="flex items-center justify-end gap-0.5">
-                  <!-- Editar -->
                   <button
-                    @click="abrirModal(u)"
+                    type="button"
                     title="Editar usuario"
-                    class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all"
+                    aria-label="Editar usuario"
+                    class="flex size-8 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-blue-50 hover:text-blue-600"
+                    @click="abrirModal(u)"
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                      stroke-linecap="round" stroke-linejoin="round">
+                    <svg aria-hidden="true" class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                       <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                     </svg>
                   </button>
-                  <!-- Eliminar -->
                   <button
-                    @click="abrirConfirmacionEliminar(u)"
-                    title="Eliminar usuario"
-                    class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all"
+                    type="button"
+                    :title="u.estado === 'Activo' ? 'Desactivar usuario' : 'Activar usuario'"
+                    :aria-label="u.estado === 'Activo' ? 'Desactivar usuario' : 'Activar usuario'"
+                    class="flex size-8 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-colors"
+                    :class="u.estado === 'Activo' ? 'hover:bg-amber-50 hover:text-amber-700' : 'hover:bg-green-50 hover:text-green-700'"
+                    @click="abrirConfirmacion(u, u.estado === 'Activo' ? 'desactivar' : 'activar')"
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                      stroke-linecap="round" stroke-linejoin="round">
+                    <svg aria-hidden="true" class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <template v-if="u.estado === 'Activo'">
+                        <path d="M12 2v10M6.4 6.4a8 8 0 1 0 11.2 0"/>
+                      </template>
+                      <template v-else>
+                        <circle cx="12" cy="12" r="9"/>
+                        <path d="m8.5 12 2.5 2.5 4.5-5"/>
+                      </template>
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    title="Eliminar usuario"
+                    aria-label="Eliminar usuario"
+                    class="flex size-8 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-red-50 hover:text-red-500"
+                    @click="abrirConfirmacion(u, 'eliminar')"
+                  >
+                    <svg aria-hidden="true" class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <polyline points="3 6 5 6 21 6"/>
                       <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
                       <path d="M10 11v6M14 11v6"/>
                       <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-                    </svg>
-                  </button>
-                  <!-- Más opciones -->
-                  <button
-                    title="Más opciones"
-                    class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all"
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                      stroke-linecap="round" stroke-linejoin="round">
-                      <circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>
                     </svg>
                   </button>
                 </div>
@@ -197,9 +200,10 @@
           </template>
         </tbody>
       </table>
+      </div>
 
       <!-- Footer tabla -->
-      <div class="px-6 py-4 border-t border-slate-100 flex items-center justify-between">
+      <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6">
         <p class="text-[12.5px] text-slate-400">
           Mostrando <span class="font-semibold text-slate-600">{{ rangoLabel }}</span> de
           <span class="font-semibold text-slate-600">{{ total.toLocaleString('es-CO') }}</span> usuarios
@@ -270,7 +274,7 @@
             <div class="flex items-start justify-between px-6 pt-6 pb-4">
               <div>
                 <h3 class="text-[16px] font-bold text-slate-800">
-                  {{ usuarioEditando ? 'Editar Usuario' : 'Crear Nueva Secretaria' }}
+                  {{ usuarioEditando ? 'Editar Usuario' : 'Crear Nueva cuenta' }}
                 </h3>
                 <p class="text-[12.5px] text-slate-400 mt-1 leading-relaxed">
                   {{ usuarioEditando ? 'Modifica los datos del integrante.' : 'Completa los datos para registrar una nueva secretaria en la plataforma Novedades Autonoma.' }}
@@ -297,7 +301,7 @@
                 <div class="flex items-start gap-3">
                   <span class="text-[12.5px] font-medium text-slate-500 w-[72px] text-right pt-2.5 shrink-0">Correo</span>
                   <div class="flex-1">
-                    <BaseInput v-model="form.email" placeholder="usuario@u.edu.co" :error-message="errForm.email" />
+                    <BaseInput v-model="form.email" type="email" placeholder="usuario@u.edu.co" :error-message="errForm.email" />
                   </div>
                 </div>
 
@@ -321,20 +325,26 @@
                 </div>
               </div>
 
+              <p v-if="!usuarioEditando" class="rounded-lg bg-blue-50 p-3 text-xs leading-relaxed text-blue-700">
+                La cuenta se crea con una contraseña temporal. Se solicitará el envío a la dirección de correo registrada.
+              </p>
+
               <!-- Botones -->
               <div class="flex items-center gap-2.5 pt-2">
                 <button
+                  :disabled="guardando"
                   @click="cerrarModal"
                   class="flex-1 py-2.5 rounded-xl border border-slate-200 text-[13px] font-semibold text-slate-600 hover:bg-slate-50 transition-all"
                 >
                   Cancelar
                 </button>
                 <button
+                  :aria-busy="guardando"
                   @click="guardarUsuario"
                   :disabled="guardando"
-                  class="flex-1 py-2.5 rounded-xl bg-[var(--color-orange)] hover:bg-[var(--color-orange-dark)] disabled:opacity-60 text-white text-[13px] font-bold transition-all flex items-center justify-center gap-2"
+                  class="flex-1 py-2.5 rounded-xl bg-[var(--color-orange)] hover:bg-[#f6be86] disabled:opacity-60 text-[#172f48] text-[13px] font-bold transition-all flex items-center justify-center gap-2"
                 >
-                  <svg v-if="guardando" class="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+                  <Cargando v-if="guardando" decorativo />
                   {{ guardando ? 'Guardando...' : 'Guardar Usuario' }}
                 </button>
               </div>
@@ -344,59 +354,38 @@
       </div>
     </Transition>
 
-    <!-- Modal: Confirmar desactivación -->
-    <Transition
-      enter-active-class="transition-all duration-200 ease-out"
-      enter-from-class="opacity-0"
-      enter-to-class="opacity-100"
-      leave-active-class="transition-all duration-150 ease-in"
-      leave-from-class="opacity-100"
-      leave-to-class="opacity-0"
+    <dialog
+      ref="dialogoAccion"
+      class="m-auto w-[min(28rem,calc(100%-2rem))] rounded-2xl border border-slate-200 bg-white p-0 shadow-xl backdrop:bg-slate-950/40"
+      aria-labelledby="confirmar-accion-titulo"
+      aria-describedby="confirmar-accion-detalle"
+      @cancel.prevent="cerrarConfirmacion"
     >
-      <div
-        v-if="confirmacionEliminarAbierta"
-        class="fixed inset-0 bg-transparent z-[55] flex items-center justify-center p-4"
-        @click.self="cerrarConfirmacionEliminar"
-      >
-        <div class="w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden">
-          <div class="px-6 pt-5 pb-4">
-            <div class="flex items-center gap-3 mb-3">
-              <div class="w-9 h-9 rounded-xl bg-red-50 text-red-500 flex items-center justify-center">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="10"/>
-                  <line x1="12" y1="8" x2="12" y2="12"/>
-                  <line x1="12" y1="16" x2="12.01" y2="16"/>
-                </svg>
-              </div>
-              <h3 class="text-[16px] font-bold text-slate-800">Confirmar desactivación</h3>
-            </div>
-
-            <p class="text-[13px] text-slate-600 leading-relaxed">
-              ¿Deseas desactivar a
-              <span class="font-semibold text-slate-800">{{ usuarioAEliminar?.nombre_completo || usuarioAEliminar?.nombre }}</span>?
-            </p>
-            <p class="text-[12px] text-slate-400 mt-2">
-              El usuario no podrá ingresar al sistema mientras esté inactivo.
-            </p>
-          </div>
-
-          <div class="px-6 pb-5 flex items-center justify-end gap-2.5">
-            <button
-              @click="cerrarConfirmacionEliminar"
-              class="px-4 py-2 rounded-xl border border-slate-200 text-[13px] font-semibold text-slate-600 hover:bg-slate-50 transition-all"
-            >
-              Cancelar
-            </button>
-            <button
-              @click="confirmarEliminar"
-              class="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-[13px] font-semibold transition-all"
-            >
-              Desactivar usuario
-            </button>
-          </div>
+      <div v-if="confirmacion" class="space-y-4 p-5 sm:p-6">
+        <h2 id="confirmar-accion-titulo" class="text-lg font-bold">{{ acciones[confirmacion.tipo].titulo }}</h2>
+        <div id="confirmar-accion-detalle" class="space-y-2 text-sm leading-relaxed text-slate-700">
+          <p class="break-words font-semibold">{{ confirmacion.usuario.nombre_completo || confirmacion.usuario.nombre }}</p>
+          <p>{{ acciones[confirmacion.tipo].descripcion }}</p>
+        </div>
+        <p v-if="errorAccion" role="alert" class="text-sm text-red-700">{{ errorAccion }}</p>
+        <div class="flex flex-wrap justify-end gap-2">
+          <button type="button" autofocus :disabled="procesandoAccion" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold disabled:opacity-50" @click="cerrarConfirmacion">
+            Cancelar
+          </button>
+          <button
+            type="button"
+            :disabled="procesandoAccion"
+            :aria-busy="procesandoAccion"
+            class="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+            :class="confirmacion.tipo === 'eliminar' ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'"
+            @click="confirmarAccion"
+          >
+            <Cargando v-if="procesandoAccion" decorativo />
+            {{ acciones[confirmacion.tipo].titulo }}
+          </button>
         </div>
       </div>
-    </Transition>
+    </dialog>
 
     <!-- Toast -->
     <Transition
@@ -424,7 +413,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, reactive } from 'vue'
+import { ref, computed, onMounted, watch, reactive, nextTick } from 'vue'
 import usuariosService from '../services/usuariosService'
 import type { UsuarioAdmin, UsuariosStats, RolUsuario, EstadoUsuario } from '../types'
 import AdminLayout from '../components/layout/AdminLayout.vue'
@@ -445,8 +434,31 @@ const loadingTabla   = ref(false)
 const modalAbierto    = ref(false)
 const usuarioEditando = ref<UsuarioAdmin | null>(null)
 const guardando       = ref(false)
-const confirmacionEliminarAbierta = ref(false)
-const usuarioAEliminar = ref<UsuarioAdmin | null>(null)
+const acciones = {
+  activar: {
+    titulo: 'Activar cuenta',
+    descripcion: 'La persona podrá iniciar sesión nuevamente.',
+    aplicar: usuariosService.reactivarUsuario,
+    exito: 'Cuenta activada.',
+  },
+  desactivar: {
+    titulo: 'Desactivar cuenta',
+    descripcion: 'Se bloqueará el acceso hasta que actives la cuenta de nuevo.',
+    aplicar: usuariosService.desactivarUsuario,
+    exito: 'Cuenta desactivada.',
+  },
+  eliminar: {
+    titulo: 'Eliminar cuenta',
+    descripcion: 'La cuenta desaparecerá del directorio y perderá el acceso. La acción quedará registrada en auditoría.',
+    aplicar: usuariosService.eliminarUsuario,
+    exito: 'Cuenta eliminada del directorio.',
+  },
+} as const
+
+const dialogoAccion = ref<HTMLDialogElement | null>(null)
+const confirmacion = ref<{ usuario: UsuarioAdmin; tipo: keyof typeof acciones } | null>(null)
+const procesandoAccion = ref(false)
+const errorAccion = ref('')
 
 const form = reactive({
   nombre:          '',
@@ -460,6 +472,7 @@ const errForm = reactive({
 })
 
 // ─── Toast ───────────────────────────────────────────────────────────────────
+const clavePendiente = ref<{ clave: string; mensaje: string } | null>(null)
 const toast = ref<{ tipo: 'exito' | 'error'; mensaje: string } | null>(null)
 
 // ─── Carga inicial ────────────────────────────────────────────────────────────
@@ -534,7 +547,7 @@ function validarForm(): boolean {
 }
 
 async function guardarUsuario() {
-  if (!validarForm()) return
+  if (guardando.value || !validarForm()) return
   guardando.value = true
   try {
     if (usuarioEditando.value) {
@@ -568,12 +581,20 @@ async function guardarUsuario() {
       })
       if (resultadoCreacion?.usuario) {
         usuarios.value.unshift(resultadoCreacion.usuario)
-        const passwordTemporal = resultadoCreacion.contrasena_temporal
-        const baseMensaje = resultadoCreacion.mensaje || 'Usuario creado correctamente.'
-        const mensajeUI = passwordTemporal
-          ? `${baseMensaje} Clave temporal: ${passwordTemporal}`
-          : baseMensaje
-        mostrarToast(mensajeUI, 'exito')
+        clavePendiente.value = null
+        if (resultadoCreacion.correo_acceso === 'aceptado') {
+          mostrarToast('Cuenta creada. El proveedor aceptó el correo con los datos de acceso.', 'exito')
+        } else if (resultadoCreacion.contrasena_temporal) {
+          clavePendiente.value = {
+            clave: resultadoCreacion.contrasena_temporal,
+            mensaje: resultadoCreacion.correo_acceso === 'no_configurado'
+              ? 'El envío institucional aún no está configurado. Entrega la clave por un canal privado.'
+              : 'El envío no se pudo confirmar. Coordina la entrega de la clave por un canal privado.',
+          }
+          mostrarToast('Cuenta creada. Revisa la sección de entrega de contraseña.', 'exito')
+        } else {
+          mostrarToast('Cuenta creada correctamente.', 'exito')
+        }
       }
     }
     cerrarModal()
@@ -595,32 +616,45 @@ async function guardarUsuario() {
   }
 }
 
-function abrirConfirmacionEliminar(u: UsuarioAdmin) {
-  usuarioAEliminar.value = u
-  confirmacionEliminarAbierta.value = true
+async function abrirConfirmacion(usuario: UsuarioAdmin, tipo: keyof typeof acciones) {
+  confirmacion.value = { usuario, tipo }
+  errorAccion.value = ''
+  await nextTick()
+  dialogoAccion.value?.showModal()
 }
 
-function cerrarConfirmacionEliminar() {
-  confirmacionEliminarAbierta.value = false
-  usuarioAEliminar.value = null
+function cerrarConfirmacion() {
+  if (procesandoAccion.value) return
+  dialogoAccion.value?.close()
+  confirmacion.value = null
 }
 
-async function confirmarEliminar() {
-  if (!usuarioAEliminar.value) return
+async function confirmarAccion() {
+  if (!confirmacion.value || procesandoAccion.value) return
+  const { usuario, tipo } = confirmacion.value
+  const accion = acciones[tipo]
+  procesandoAccion.value = true
+  errorAccion.value = ''
   try {
-    await usuariosService.desactivar(Number(usuarioAEliminar.value.id))
-    const idx = usuarios.value.findIndex(x => x.id === usuarioAEliminar.value?.id)
-    if (idx !== -1) {
-      const usuario = usuarios.value[idx]
-      if (usuario) {
-        usuario.estado = 'Inactivo'
-      }
+    await accion.aplicar(Number(usuario.id))
+    if (tipo === 'eliminar') {
+      usuarios.value = usuarios.value.filter(item => item.id !== usuario.id)
+      total.value = Math.max(0, total.value - 1)
+      if (stats.value) stats.value.secretarias = total.value
+      if (page.value > totalPages.value) page.value = totalPages.value
+      else await fetchTabla()
+    } else {
+      const fila = usuarios.value.find(item => item.id === usuario.id)
+      if (fila) fila.estado = tipo === 'activar' ? 'Activo' : 'Inactivo'
     }
-    cerrarConfirmacionEliminar()
-    mostrarToast('Usuario desactivado.', 'exito')
+    mostrarToast(accion.exito, 'exito')
   } catch (err: unknown) {
-    mostrarToast((err as { message?: string })?.message ?? 'Error al desactivar.', 'error')
+    errorAccion.value = (err as { message?: string })?.message ?? 'No se pudo actualizar la cuenta.'
+    return
+  } finally {
+    procesandoAccion.value = false
   }
+  cerrarConfirmacion()
 }
 
 function mostrarToast(mensaje: string, tipo: 'exito' | 'error') {

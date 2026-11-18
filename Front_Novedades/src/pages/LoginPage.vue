@@ -1,13 +1,14 @@
 <template>
     <AuthLayout
-        title="Portal Estudiantil"
-        subtitle="Ingrese sus credenciales universitarias para gestionar sus solicitudes academicas."
+        title="Inicia sesión"
+        subtitle="Ingresa con tu cuenta institucional para continuar."
+        descripcion="En Novedades Autónoma puedes solicitar cambios de curso o jornada, adicionar materias y pedir un curso dirigido. Consulta aquí el estado de tus solicitudes. Secretaría y administración usan este mismo portal para gestionarlas."
     >
     <AlertMessage :message="authStore.error" class="mb-5"/>
 
     <LoginForm :loading="authStore.isLoading" @submit="handleLogin"/>
 
-    <div class="mt-5">
+    <div v-if="googleHabilitado" class="mt-5">
       <div class="relative my-4">
         <div class="absolute inset-0 flex items-center">
           <div class="w-full border-t border-slate-200"></div>
@@ -16,6 +17,8 @@
           <span class="bg-white px-2 text-slate-400">o continúa con</span>
         </div>
       </div>
+      <Cargando v-if="cargandoGoogle" texto="Preparando acceso con Google…" />
+      <p v-else-if="errorGoogle" class="text-center text-sm text-slate-600">El acceso con Google no está disponible en este momento.</p>
       <div id="google-login-button" class="flex justify-center"></div>
     </div>
 
@@ -37,7 +40,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { onMounted, onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import AuthLayout from '../components/layout/AuthLayout.vue';
 import LoginForm from '../components/auth/LoginForm.vue';
@@ -54,37 +57,39 @@ declare global {
   }
 }
 
+const googleHabilitado = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID);
+const cargandoGoogle = ref(googleHabilitado);
+const errorGoogle = ref(false);
+let esperaGoogle: ReturnType<typeof setTimeout> | undefined;
+
 onMounted(() => {
   authStore.clearError();
-  loadGoogleButton();
+  if (googleHabilitado) cargarGoogle(0);
 });
 
-function loadGoogleButton() {
-  const buttonId = 'google-login-button';
-  const container = document.getElementById(buttonId);
+onUnmounted(() => clearTimeout(esperaGoogle));
 
-  if (!container || !window.google) {
-    const checkGoogle = () => {
-      if (window.google && document.getElementById(buttonId)) {
-        renderGoogleButton();
-      } else {
-        setTimeout(checkGoogle, 200);
-      }
-    };
-    checkGoogle();
-    return;
+function cargarGoogle(intentos: number) {
+  if (window.google?.accounts?.id) {
+    try {
+      renderGoogleButton();
+    } catch {
+      errorGoogle.value = true;
+    }
+    cargandoGoogle.value = false;
+  } else if (intentos < 25) {
+    esperaGoogle = setTimeout(() => cargarGoogle(intentos + 1), 200);
+  } else {
+    errorGoogle.value = true;
+    cargandoGoogle.value = false;
   }
-
-  renderGoogleButton();
 }
-
 function renderGoogleButton() {
   const button = document.getElementById('google-login-button');
   if (!button || !window.google?.accounts?.id) return;
 
   button.innerHTML = '';
 
-  console.log('Google Client ID:', import.meta.env.VITE_GOOGLE_CLIENT_ID);
 
   window.google.accounts.id.initialize({
     client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || '',

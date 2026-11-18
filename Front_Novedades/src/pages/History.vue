@@ -16,12 +16,16 @@
         v-model:filtroActivo="filtroActivo"
       />
 
+      <Cargando v-if="isLoadingSolicitudes" texto="Cargando historial…" />
+      <p v-else-if="errorHistorial" role="alert" class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">No se pudo cargar el historial.</p>
       <HistoryGrid
+        v-else
         :solicitudes="solicitudesPaginadas"
         @ver-detalle="verDetalle"
       />
 
       <PaginationHistory
+        v-if="!isLoadingSolicitudes && !errorHistorial && solicitudesFiltradas.length"
         v-model:paginaActual="paginaActual"
         :total-paginas="totalPaginas"
         :mostrando="solicitudesPaginadas.length"
@@ -53,7 +57,8 @@ const authStore = useAuthStore()
 
 // ─── Datos ────────────────────────────────────────────────────
 const solicitudes = ref<any[]>([])
-const isLoadingSolicitudes = ref(false)
+const isLoadingSolicitudes = ref(true)
+const errorHistorial = ref(false)
 
 function normalizarEstado(estadoRaw?: string): EstadoSolicitud {
   const estado = String(estadoRaw || '').trim().toLowerCase()
@@ -83,7 +88,7 @@ onMounted(async () => {
   console.log('📊 History: Cargando historial de solicitudes...')
   isLoadingSolicitudes.value = true
   try {
-    const data = await solicitudesService.getMisSolicitudes()
+    const data = await solicitudesService.getMisSolicitudes(undefined, { propagarError: true })
     console.log('✅ Historial cargado:', data)
 
     solicitudes.value = (data || []).map((s: any) => ({
@@ -97,7 +102,7 @@ onMounted(async () => {
     }))
   } catch (error) {
     console.error('❌ Error al cargar historial:', error)
-    solicitudes.value = []
+    errorHistorial.value = true
   } finally {
     isLoadingSolicitudes.value = false
   }

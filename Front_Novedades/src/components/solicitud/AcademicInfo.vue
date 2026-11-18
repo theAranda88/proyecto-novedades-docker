@@ -10,10 +10,16 @@
       </div>
       <div>
         <h2 class="text-sm font-bold text-slate-700">Información Académica</h2>
-        <p class="text-xs text-slate-400">Estos datos han sido cargados automáticamente desde su registro institucional.
+        <p class="text-xs text-slate-400">
+          <Cargando v-if="loading" inline texto="Actualizando datos del registro institucional…" />
+          <span v-else>Datos del registro institucional.</span>
         </p>
       </div>
     </div>
+
+    <p v-if="error" class="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800" role="status">
+      {{ error }}
+    </p>
 
     <div class="grid grid-cols-2 gap-4 border-t border-slate-100 pt-4">
 
@@ -26,7 +32,7 @@
           </svg>
           Nombre Completo
         </p>
-        <p class="text-sm font-semibold text-slate-700">{{ student?.nombre || '—' }}</p>
+        <p class="text-sm font-semibold text-slate-700">{{ student?.nombre_completo || student?.nombre || '—' }}</p>
       </div>
 
       <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
@@ -38,7 +44,7 @@
           </svg>
           Codigo Estudiantil
         </p>
-        <p class="text-sm font-semibold text-slate-700">{{ student?.codigo || '—' }}</p>
+        <p class="text-sm font-semibold text-slate-700">{{ student?.codigo || student?.cod_alumno || '—' }}</p>
       </div>
 
       <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
@@ -50,7 +56,7 @@
           </svg>
           Programa Academico
         </p>
-        <p class="text-sm font-semibold text-slate-700">{{ student?.carrera || student?.programa || '—' }}</p>
+        <p class="text-sm font-semibold text-slate-700">{{ student?.programa || student?.carrera || '—' }}</p>
       </div>
 
       <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
@@ -72,5 +78,9 @@
 <script setup lang="ts">
 import type { StudentInfo } from '../../types'
 
-defineProps<{ student: StudentInfo | null }>()
+defineProps<{
+  student: StudentInfo | null
+  loading?: boolean
+  error?: string
+}>()
 </script>

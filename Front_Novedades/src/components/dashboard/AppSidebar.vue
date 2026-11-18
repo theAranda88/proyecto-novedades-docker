@@ -1,13 +1,13 @@
 <template>
-  <div class="flex flex-col h-full">
+  <div class="flex h-full items-center md:flex-col md:items-stretch">
 
     <!-- Items de navegación -->
-    <nav class="flex-1 px-3 py-7">
-      <ul class="flex flex-col gap-1">
+    <nav aria-label="Navegación estudiantil" class="min-w-0 flex-1 overflow-x-auto px-2 py-1.5 md:px-3 md:py-7">
+      <ul class="flex min-w-max justify-between gap-1 md:min-w-0 md:flex-col">
         <li v-for="item in navItems" :key="item.name">
           <RouterLink
             :to="item.to"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors"
+            class="flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-lg px-2 py-1.5 text-xs whitespace-nowrap transition-colors md:flex-row md:justify-start md:gap-3 md:px-3 md:py-2.5 md:text-sm"
             :class="
               $route.name === item.routeName
                 ? 'bg-blue-50 text-blue-700 font-semibold'
@@ -22,16 +22,17 @@
     </nav>
 
     <!-- Cerrar sesión -->
-    <div class="p-3 border-t border-slate-100">
+    <div class="shrink-0 border-l border-slate-100 px-1.5 md:border-t md:border-l-0 md:p-3">
       <button
-        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-red-500
-               hover:bg-red-50 hover:text-red-700 transition-colors"
+        type="button"
+        aria-label="Cerrar sesión"
+        class="flex min-h-11 w-full items-center justify-center gap-3 rounded-lg px-2.5 py-2 text-sm text-red-600 transition-colors hover:bg-red-50 hover:text-red-700 md:justify-start md:px-3"
         @click="$emit('logout')"
       >
         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
         </svg>
-        Cerrar Sesión
+        <span class="hidden md:inline">Cerrar sesión</span>
       </button>
     </div>
 
@@ -63,13 +64,13 @@ const navItems = [
   {
     name: 'Nueva Solicitud',
     to: '/nueva-solicitud',
-    routeName: 'Nueva Solicitud',
+    routeName: 'NewApplication',
     icon: makeIcon('M12 4v16m8-8H4'),
   },
   {
     name: 'Mi Historial',
     to: '/historial',
-    routeName: 'Historial',
+    routeName: 'History',
     icon: makeIcon('M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'),
   },
   {

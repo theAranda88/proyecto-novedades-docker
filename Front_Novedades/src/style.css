@@ -101,3 +101,50 @@ h3 {
 	font-family: 'Montserrat', sans-serif;
 	font-weight: 800;
 }
+
+.banda-institucional {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 92% 120%, #315b84, transparent 72%), var(--color-navy);
+  color: white;
+}
+
+.banda-institucional::before,
+.banda-institucional::after {
+  position: absolute;
+  z-index: -1;
+  right: -5rem;
+  bottom: -15rem;
+  width: 25rem;
+  aspect-ratio: 1;
+  border: 1px solid rgb(255 255 255 / 18%);
+  border-radius: 50%;
+  pointer-events: none;
+  content: '';
+}
+
+.banda-institucional::after {
+  right: -2.5rem;
+  bottom: -17rem;
+  width: 30rem;
+}
+
+.entrada-suave {
+  animation: entrada-suave .26s ease-out;
+}
+
+@keyframes entrada-suave {
+  from { opacity: 0; transform: translateY(.3rem); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .entrada-suave { animation: none; }
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

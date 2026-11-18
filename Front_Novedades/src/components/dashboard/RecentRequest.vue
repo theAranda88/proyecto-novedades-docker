@@ -1,90 +1,58 @@
 <template>
-  <div>
-    <!-- Header -->
-    <section class="bg-white rounded-t-md border border-b-0 border-slate-200 px-6 py-5">
-      <div class="flex items-center justify-between">
-        <div>
-          <div class="flex items-center gap-1">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-blue-600 shrink-0">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25"/>
-            </svg>
-            <h3 class="text-base font-semibold text-slate-800 leading-none">Solicitudes Recientes</h3>
-          </div>
-          <p class="text-xs text-slate-500 mt-1">Estado actual de tus trámites académicos más recientes</p>
-        </div>
-        <button
-          class="text-sm inline-flex items-center gap-1 text-blue-600 font-medium px-4 py-3
-                 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors"
-          @click="$emit('ver-historial')"
-        >
-          Ver historial completo
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 shrink-0">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"/>
-          </svg>
-        </button>
-      </div>
-    </section>
+  <section aria-labelledby="solicitudes-recientes" class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+    <header class="flex flex-wrap items-center justify-between gap-x-5 gap-y-2 px-4 py-5 sm:px-6">
+      <h2 id="solicitudes-recientes" class="text-lg font-bold">Solicitudes recientes</h2>
+      <RouterLink :to="{ name: 'History' }" class="inline-flex min-h-10 items-center gap-2 rounded-lg px-2 text-sm font-semibold text-blue-600 hover:bg-blue-50">
+        Ver historial <span aria-hidden="true">→</span>
+      </RouterLink>
+    </header>
 
-    <!-- Tabla -->
-    <div class="max-w-full overflow-x-auto bg-white border border-slate-200 rounded-b-md">
-      <table class="min-w-full">
-        <thead>
-          <tr class="border-y border-gray-100">
-            <th class="px-6 py-3 text-left"><p class="text-xs font-medium text-slate-500">ID Solicitud</p></th>
-            <th class="px-6 py-3 text-left"><p class="text-xs font-medium text-slate-500">Tipo de Trámite</p></th>
-            <th class="px-6 py-3 text-left"><p class="text-xs font-medium text-slate-500">Fecha Envío</p></th>
-            <th class="px-6 py-3 text-left"><p class="text-xs font-medium text-slate-500">Estado</p></th>
-            <th class="px-6 py-3 text-right"><p class="text-xs font-medium text-slate-500">Acción</p></th>
+    <Cargando v-if="cargando" texto="Cargando tus solicitudes…" />
+    <p v-else-if="error" role="status" class="border-t border-slate-200 px-4 py-6 text-sm text-slate-500 sm:px-6">
+      No se pudieron cargar tus solicitudes. Intenta de nuevo más tarde.
+    </p>
+    <p v-else-if="!solicitudes.length" class="border-t border-slate-200 px-4 py-6 text-sm text-slate-500 sm:px-6">
+      Tus solicitudes aparecerán aquí después de enviarlas.
+    </p>
+    <div v-else class="overflow-x-auto">
+      <table class="w-full text-left text-sm" aria-labelledby="solicitudes-recientes">
+        <thead class="border-y border-slate-200 bg-[#f5f7fb] text-slate-600">
+          <tr>
+            <th scope="col" class="px-4 py-3 font-semibold sm:px-6">Código</th>
+            <th scope="col" class="px-4 py-3 font-semibold">Tipo de trámite</th>
+            <th scope="col" class="px-4 py-3 font-semibold whitespace-nowrap">Fecha de envío</th>
+            <th scope="col" class="px-4 py-3 font-semibold sm:px-6">Estado</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-gray-100">
-          <tr v-for="solicitud in solicitudes" :key="solicitud.id" class="hover:bg-slate-50 transition-colors">
-            <td class="px-6 py-3.5">
-              <p class="text-xs font-medium text-blue-600">{{ solicitud.id }}</p>
-            </td>
-            <td class="px-6 py-3.5">
-              <p class="text-xs font-medium text-slate-800">{{ solicitud.tipo }}</p>
-            </td>
-            <td class="px-6 py-3.5">
-              <p class="text-xs text-slate-400">{{ solicitud.fechaEnvio }}</p>
-            </td>
-            <td class="px-6 py-3.5">
-              <span :class="['inline-block px-2 py-0.5 text-xs font-medium rounded-full', estadoBadge[solicitud.estado]]">
+        <tbody class="divide-y divide-slate-200">
+          <tr v-for="solicitud in solicitudes" :key="solicitud.id" class="hover:bg-[#f5f7fb]">
+            <th scope="row" class="px-4 py-3.5 font-semibold whitespace-nowrap text-blue-600 sm:px-6">{{ solicitud.id }}</th>
+            <td class="px-4 py-3.5">{{ solicitud.tipo }}</td>
+            <td class="px-4 py-3.5 whitespace-nowrap text-slate-500">{{ solicitud.fechaEnvio }}</td>
+            <td class="px-4 py-3.5 sm:px-6">
+              <span class="inline-block rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap" :class="estadoBadge[solicitud.estado] || 'bg-slate-100 text-slate-700'">
                 {{ solicitud.estado }}
               </span>
-            </td>
-            <td class="px-6 py-3.5 text-right">
-              <span class="text-xs font-medium text-slate-500"> </span>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
-  </div>
+  </section>
 </template>
 
 <script setup lang="ts">
-import type { EstadoSolicitud } from '../../types'
-
-// Tipo local para esta tabla — luego se reemplaza con el tipo real del backend
-interface SolicitudTabla {
-  id: string
-  tipo: string
-  fechaEnvio: string
-  estado: EstadoSolicitud
-}
-
-defineProps<{ solicitudes: SolicitudTabla[] }>()
-
-defineEmits<{
-  (e: 'ver-historial'): void
-  (e: 'ver-detalle', id: string): void
+defineProps<{
+  solicitudes: { id: string; tipo: string; fechaEnvio: string; estado: string }[]
+  cargando: boolean
+  error: boolean
 }>()
 
-const estadoBadge: Record<EstadoSolicitud, string> = {
-  'Aprobada':   'bg-green-100 text-green-700',
-  'Rechazada':  'bg-red-100 text-red-700',
+const estadoBadge: Record<string, string> = {
+  Aprobada: 'bg-green-100 text-green-700',
+  Rechazada: 'bg-red-100 text-red-700',
   'En proceso': 'bg-blue-100 text-blue-700',
-  'Pendiente':  'bg-yellow-100 text-yellow-700',
+  'En revisión': 'bg-blue-100 text-blue-700',
+  Pendiente: 'bg-[#fff2db] text-[#80531e]',
 }
 </script>

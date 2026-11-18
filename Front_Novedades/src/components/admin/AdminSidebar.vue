@@ -1,16 +1,16 @@
 <template>
-  <aside class="w-[200px] min-h-screen bg-white border-r border-slate-200 flex flex-col fixed top-0 left-0 z-20">
+  <aside class="z-20 flex shrink-0 flex-wrap items-center justify-between gap-x-1 border-b border-slate-200 bg-white md:fixed md:inset-y-0 md:left-0 md:w-52 md:flex-col md:items-stretch md:border-r md:border-b-0">
 
     <!-- Logo -->
     <div class="px-5 py-4 border-b border-slate-100 flex items-center gap-2.5">
       <div class="w-10 h-8 shrink-0 flex items-center justify-center">
         <img src="/logo-uniautonoma.png" alt="Uniatónoma del Cauca" class="w-full h-full object-contain" />
       </div>
-      <span class="logo font-bold text-[15px] text-slate-800 tracking-tight">Novedades Autonoma</span>
+      <span class="logo font-bold text-[15px] text-slate-800 tracking-tight">Novedades Autónoma</span>
     </div>
 
     <!-- Nav -->
-    <nav class="flex-1 py-3 flex flex-col gap-0.5 px-2">
+    <nav aria-label="Navegación del panel" class="order-3 flex w-full gap-1 overflow-x-auto px-2 py-2 md:order-0 md:flex-1 md:flex-col md:py-4">
       <RouterLink
         v-for="item in navItems"
         :key="item.routeName"
@@ -19,9 +19,9 @@
         v-slot="{ isActive, navigate }"
       >
         <button
-          @click="navigate"
+          type="button" :aria-current="isActive ? 'page' : undefined" @click="navigate"
           :class="[
-            'flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all w-full text-left',
+            'flex min-h-10 shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors md:w-full',
             isActive
               ? 'bg-blue-50 text-blue-700 font-semibold'
               : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700',
@@ -62,7 +62,7 @@
     </nav>
 
     <!-- Cerrar sesión -->
-    <div class="px-2 py-4 border-t border-slate-100">
+    <div class="order-2 px-2 py-2 md:order-0 md:border-t md:border-slate-200 md:py-4">
       <button
         @click="$emit('logout')"
         class="flex items-center gap-2 px-3 py-2 text-[13px] text-red-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all w-full font-medium"
@@ -87,6 +87,8 @@ import type { NavItem } from '../../types'
 defineEmits<{ logout: [] }>()
 
 const navItems: NavItem[] = [
+  { label: 'Solicitudes', routeName: 'AdminDashboard', iconKey: 'home' },
+  { label: 'Auditoría', routeName: 'AdminAuditoria', iconKey: 'shield' },
   { label: 'Gestión de usuarios', routeName: 'AdminUsuarios',  iconKey: 'history'  },
 ]
 </script>

@@ -2,6 +2,13 @@ import './style.css';
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 import App from './App.vue';
+import Cargando from './components/ui/Cargando.vue';
+
+declare module 'vue' {
+  export interface GlobalComponents {
+    Cargando: typeof Cargando;
+  }
+}
 import { router } from './router';
 
 const app = createApp(App);
@@ -10,4 +17,5 @@ const app = createApp(App);
 app.use(createPinia());
 app.use(router);
 
+app.component('Cargando', Cargando);
 app.mount('#app');

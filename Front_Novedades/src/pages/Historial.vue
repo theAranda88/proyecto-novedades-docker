@@ -44,12 +44,7 @@
     </div>
 
     <!-- Loading -->
-    <div v-if="isLoading" class="flex items-center justify-center py-24">
-      <svg class="animate-spin w-7 h-7 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
-      </svg>
-    </div>
+    <Cargando v-if="isLoading" texto="Cargando historial…" />
 
     <!-- Error -->
     <AlertMessage v-else-if="error" :message="error" class="mb-4" />

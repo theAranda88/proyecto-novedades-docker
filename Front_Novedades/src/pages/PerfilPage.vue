@@ -150,17 +150,7 @@
         </div>
 
         <!-- Skeleton cargando -->
-        <div v-if="cargandoMaterias" class="p-4 space-y-3">
-          <div v-for="i in 3" :key="i" class="animate-pulse flex gap-3 items-start">
-            <div class="w-9 h-9 bg-slate-100 rounded-lg shrink-0"></div>
-            <div class="flex-1 space-y-2">
-              <div class="h-3 bg-slate-100 rounded w-3/4"></div>
-              <div class="h-2 bg-slate-100 rounded w-1/2"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Sin materias -->
+        <Cargando v-if="cargandoMaterias" texto="Cargando materias…" />
         <div v-else-if="!cargandoMaterias && materiasMatriculadas.length === 0" class="px-5 py-8 text-center">
           <div class="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center mx-auto mb-3">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">

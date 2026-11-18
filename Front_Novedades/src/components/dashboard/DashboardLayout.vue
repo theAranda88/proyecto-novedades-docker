@@ -1,24 +1,17 @@
 <template>
-  <div class="flex flex-col h-screen overflow-hidden bg-slate-50">
-
-    <!-- Slot del header -->
-    <header class="shrink-0 h-16 bg-white border-b border-slate-200 z-50">
+  <div class="flex h-dvh flex-col overflow-hidden bg-[#f5f7fb]">
+    <header class="z-50 h-16 shrink-0 border-b border-slate-200 bg-white">
       <slot name="header" />
     </header>
 
-    <!-- Cuerpo: sidebar + contenido -->
-    <div class="flex flex-1 overflow-hidden">
-
-      <!-- Slot del sidebar -->
-      <aside class="shrink-0 w-56 bg-white border-r border-slate-200 flex flex-col">
+    <div class="flex min-h-0 flex-1 flex-col md:flex-row">
+      <aside class="shrink-0 border-b border-slate-200 bg-white md:w-52 md:border-r md:border-b-0 xl:w-56">
         <slot name="sidebar" />
       </aside>
 
-      <!-- Slot del contenido — aquí vive el scroll -->
-      <main class="flex-1 overflow-y-auto p-7">
+      <main class="entrada-suave min-w-0 flex-1 overflow-y-auto px-4 pt-5 pb-24 sm:px-6 md:px-8 lg:pt-8 xl:px-10">
         <slot />
       </main>
-
     </div>
   </div>
 </template>

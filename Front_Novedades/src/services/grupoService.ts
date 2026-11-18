@@ -62,17 +62,12 @@ const gruposService = {
    * Mapea valores como "Mañana" → "manana", etc.
    */
   /**
-   * Obtiene todos los cursos del período actual sin filtro de jornada
-   * Usado para Curso Dirigido, Adición de Curso, Examen Supletorio
+   * Obtiene cursos del período más reciente con grupos activos.
+   * El backend resuelve el período para no depender de la fecha del navegador.
    */
   async obtenerTodosLosCursos(): Promise<Grupo[]> {
     try {
-      const ahora = new Date()
-      const anio = ahora.getFullYear()
-      const mes = ahora.getMonth() + 1
-      const semestre = mes <= 6 ? 1 : 2
-      const periodo = `${anio}-${semestre}`
-      return this.listarGrupos({ periodo })
+      return this.listarGrupos()
     } catch (error) {
       console.error('❌ Error al obtener todos los cursos:', error)
       return []
@@ -93,15 +88,7 @@ const gruposService = {
       
       const jornadaFormato = jornadaMap[jornada] || jornada
       
-      // Obtener el período actual (YYYY-S formato, ej: 2026-1)
-      const ahora = new Date()
-      const anio = ahora.getFullYear()
-      const mes = ahora.getMonth() + 1
-      // Semestre 1: enero-junio, Semestre 2: julio-diciembre
-      const semestre = mes <= 6 ? 1 : 2
-      const periodo = `${anio}-${semestre}`
-      
-      return this.listarPorJornada(periodo, jornadaFormato as 'manana' | 'tarde' | 'noche')
+      return this.listarGrupos({ jornada: jornadaFormato })
     } catch (error) {
       console.error('❌ Error al obtener cursos por jornada:', error)
       return []

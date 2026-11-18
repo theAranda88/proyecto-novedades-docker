@@ -93,6 +93,12 @@ const routes: RouteRecordRaw[] = [
       meta: { requiresAuth: true, requiredRole: 'Secretaria' }
     },
     { 
+      path: '/secretaria/historial',
+      name: 'SecretariaHistorial',
+      component: () => import('../pages/SecretariaDashboardPage.vue'),
+      meta: { requiresAuth: true, requiredRole: 'Secretaria' }
+    },
+    {
       path: '/secretaria/config',
       name: 'SecretariaConfig',
       component: () => import('../pages/SecretariaDashboardPage.vue'),
@@ -105,7 +111,7 @@ const routes: RouteRecordRaw[] = [
     { 
       path: '/admin/dashboard',
       name: 'AdminDashboard',
-      component: () => import('../pages/AdminDashboardPage.vue'),
+      component: () => import('../pages/SecretariaDashboardPage.vue'),
       meta: { requiresAuth: true, requiredRole: 'Administrador' }
     },
     { 
@@ -117,6 +123,12 @@ const routes: RouteRecordRaw[] = [
     { 
       path: '/admin/auditoria',
       name: 'AdminAuditoria',
+      component: () => import('../pages/AdminAuditoria.vue'),
+      meta: { requiresAuth: true, requiredRole: 'Administrador' }
+    },
+    {
+      path: '/admin/solicitudes/:id',
+      name: 'AdminSolicitudDetalle',
       component: () => import('../pages/AdminDetalleSolicitud.vue'),
       meta: { requiresAuth: true, requiredRole: 'Administrador' }
     },

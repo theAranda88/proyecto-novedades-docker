@@ -1,25 +1,28 @@
 <template>
-  <div class="min-h-screen bg-slate-50 flex font-sans text-slate-800">
+  <div class="min-h-dvh bg-slate-50 flex flex-col font-sans text-slate-800 md:flex-row">
 
     <SecreteriaSidebar @logout="handleLogout" />
 
-    <div class="flex-1 flex flex-col ml-40">
+    <div class="flex min-w-0 flex-1 flex-col md:ml-52">
       <!-- Navbar reutilizado — tag SECRETARÍA centrado -->
-      <header class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-8 sticky top-0 z-10">
-        <span class="text-[10px] font-bold tracking-widest text-slate-400 uppercase">Secretaría</span>
+      <header class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 sm:px-6 sticky top-0 z-10">
+        <span class="text-xs font-bold text-slate-700">Secretaría</span>
 
-        <div class="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
+        <div class="absolute left-1/2 hidden -translate-x-1/2 items-center gap-2 lg:flex">
           <div class="w-10 h-8 flex items-center justify-center">
             <img src="/logo-uniautonoma.png" alt="Uniatónoma del Cauca" class="w-full h-full object-contain" />
           </div>
-          <span class="logo font-bold text-[15px] text-slate-800 tracking-tight">Novedades Autonoma</span>
+          <span class="logo font-bold text-[15px] text-slate-800 tracking-tight">Novedades Autónoma</span>
         </div>
 
         <div ref="notificationsRoot" class="relative flex items-center gap-3">
+          <span class="max-w-24 truncate sm:max-w-40 text-xs font-medium text-slate-600" :title="nombreSecretaria">
+            {{ nombreSecretaria }}
+          </span>
           <button
             class="relative w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors"
             type="button"
-            @click="toggleNotificaciones"
+            aria-label="Notificaciones" :aria-expanded="isOpen" @click="toggleNotificaciones"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
               stroke-linecap="round" stroke-linejoin="round" class="w-[17px] h-[17px] text-slate-500">
@@ -37,7 +40,7 @@
 
           <div
             v-if="isOpen"
-            class="absolute top-11 right-0 z-50 w-80 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden"
+            class="absolute top-11 right-0 z-50 w-[min(20rem,calc(100vw-2rem))] bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden"
           >
             <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
               <h3 class="text-sm font-semibold text-slate-700">Notificaciones de solicitudes</h3>
@@ -51,9 +54,7 @@
               </button>
             </div>
 
-            <div v-if="isLoading" class="px-4 py-8 text-sm text-slate-500 text-center">
-              Cargando notificaciones...
-            </div>
+            <Cargando v-if="isLoading" texto="Cargando notificaciones…" />
 
             <div v-else-if="errorMessage" class="px-4 py-6 text-sm text-red-500 text-center">
               {{ errorMessage }}
@@ -80,16 +81,12 @@
         </div>
       </header>
 
-      <main class="flex-1 px-8 py-7">
+      <main class="entrada-suave mx-auto w-full max-w-[90rem] flex-1 px-4 py-5 sm:px-6 lg:px-8 lg:py-7">
         <slot />
       </main>
 
-      <footer class="px-8 py-4 border-t border-slate-200 bg-white flex items-center justify-between text-[11px] text-slate-400">
-        <span>© 2026 Novedades Autonoma – Gestión Académica Universitaria</span>
-        <div class="flex gap-4">
-          <a href="#" class="hover:text-slate-600 transition-colors">Soporte Técnico</a>
-          <a href="#" class="hover:text-slate-600 transition-colors">Privacidad</a>
-        </div>
+      <footer class="border-t border-slate-200 bg-white px-4 py-4 text-xs text-slate-600 sm:px-6">
+        Novedades Autónoma · Gestión académica
       </footer>
     </div>
 
@@ -114,7 +111,10 @@ const notificaciones = ref<Notificacion[]>([])
 const unreadCount = ref(0)
 const refreshTimer = ref<ReturnType<typeof setInterval> | null>(null)
 
-const initial = computed(() => authStore.student?.nombre?.charAt(0).toUpperCase() ?? 'S')
+const nombreSecretaria = computed(
+  () => authStore.student?.nombre_completo || authStore.student?.nombre || 'Secretaría',
+)
+const initial = computed(() => nombreSecretaria.value.charAt(0).toUpperCase() || 'S')
 
 function formatDate(value: string): string {
   if (!value) return ''
