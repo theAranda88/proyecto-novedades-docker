@@ -75,6 +75,15 @@ export class ServicioEstudiante {
     return this.repoEstudiante.listarMateriasMatriculadas(usuarioId);
   }
 
+  async obtenerMateriasMatriculadasPorCodigo(codigoEstudiantil: string): Promise<object[]> {
+    const usuarioId = await this.repoEstudiante.buscarUsuarioIdPorCodigoEstudiantil(codigoEstudiantil);
+    if (usuarioId === null) {
+      throw new ErrorNegocio('No se encontró el perfil académico del estudiante solicitado.', 404);
+    }
+
+    return this.obtenerMateriasMatriculadas(usuarioId);
+  }
+
   /**
    * Lista los grupos de curso disponibles (cupos > 0) para el periodo indicado.
    * El front usa este endpoint para poblar los dropdowns del formulario:
@@ -88,12 +97,12 @@ export class ServicioEstudiante {
    * @throws {ErrorNegocio} HTTP 400 si el formato del periodo es inválido
    */
   async listarGrupos(
-    periodo:  string,
+    periodo?: string,
     cursoId?: number,
     jornada?: string,
   ): Promise<object[]> {
     const formatoPeriodo = /^\d{4}-[1-3]$/;
-    if (!formatoPeriodo.test(periodo)) {
+    if (periodo && !formatoPeriodo.test(periodo)) {
       throw new ErrorNegocio(
         'Formato de periodo inválido. Use: AAAA-N (ej: 2026-1)',
         400,
@@ -213,4 +222,3 @@ export class ServicioEstudiante {
       .substring(0, 100);                   // máximo 100 caracteres
   }
 }
-

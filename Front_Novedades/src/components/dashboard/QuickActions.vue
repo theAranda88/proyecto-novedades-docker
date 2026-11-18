@@ -1,19 +1,15 @@
 <template>
-  <div class="grid grid-cols-4 gap-4 mb-6">
+  <div class="grid grid-cols-1 gap-3 min-[380px]:grid-cols-2 xl:grid-cols-4">
     <button
-      v-for="(action, i) in actions"
+      v-for="action in actions"
       :key="action.type"
-      @click="selectAction(i, action.type)"
-      :class="[
-        'rounded-sm border-2 p-5 text-left transition-all duration-200 hover:-translate-y-1 group',
-        selected === i
-          ? 'border-blue-400 bg-blue-50 shadow-md shadow-blue-100'
-          : 'border-slate-100 bg-white hover:border-blue-200 hover:shadow-sm'
-      ]"
+      type="button"
+      class="group rounded-xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-blue-400 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 sm:p-5"
+      @click="$emit('seleccionar', action.type)"
     >
       <div
-        class="mb-3 flex h-[42px] w-[42px] transition-transform duration-200 group-hover:scale-110
-               origin-left items-center justify-center rounded-xl bg-blue-100 text-blue-700"
+        class="mb-3 flex size-10 items-center justify-center rounded-lg bg-blue-50 text-blue-700 transition-colors group-hover:bg-blue-100"
+        aria-hidden="true"
         v-html="action.icon"
       />
       <h3 class="text-sm font-semibold text-slate-800 tracking-tight mb-1">
@@ -27,17 +23,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
 import type { TipoTramite } from '../../types'
 
-const selected = ref<number | null>(null)
-
-const emit = defineEmits<{ seleccionar: [tipo: TipoTramite] }>()
-
-const selectAction = (index: number, tipo: TipoTramite) => {
-  selected.value = index
-  emit('seleccionar', tipo)
-}
+defineEmits<{ seleccionar: [tipo: TipoTramite] }>()
 
 const actions = [
   {

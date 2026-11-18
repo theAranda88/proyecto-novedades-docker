@@ -7,6 +7,7 @@ interface CrearUsuarioResult {
   usuario: UsuarioAdmin
   mensaje: string
   contrasena_temporal?: string
+  correo_acceso?: 'aceptado' | 'no_configurado' | 'no_confirmado'
   mensaje_contrasena?: string
   primer_login?: boolean
 }
@@ -242,17 +243,16 @@ const usuariosService = {
         rol: rolMap[payload.rol] || payload.rol.toUpperCase()
       }
       
-      console.log('📤 Enviando crear usuario:', payloadEnvio)
       const { data } = await http.post<BackendEnvelope<any>>('/usuarios', payloadEnvio)
       // El backend devuelve: { ok, mensaje, datos: { ...usuario, contrasena_temporal }, codigo_estado: 201 }
       const datos = getBackendDataOrThrow(data)
-      console.log('✅ Usuario creado:', datos)
 
       return {
         usuario: mapBackendUsuario(datos || {}),
         mensaje: data.mensaje || 'Usuario creado correctamente.',
         contrasena_temporal: datos?.contrasena_temporal || datos?.password_temporal,
         mensaje_contrasena: datos?.mensaje_contrasena,
+        correo_acceso: datos?.correo_acceso,
         primer_login: datos?.primer_login,
       }
     } catch (error) {
@@ -314,6 +314,10 @@ const usuariosService = {
       console.error('❌ Error desactivando usuario:', error)
       throw error
     }
+  },
+
+  async eliminarUsuario(id: number): Promise<void> {
+    await http.delete('/usuarios/' + id)
   },
 
   /**

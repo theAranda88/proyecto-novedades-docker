@@ -67,7 +67,6 @@ const authApi = {
       password: payload.password,
     }
 
-    console.log('📤 Enviando login con:', sendPayload)
     const { data } = await http.post<BackendLoginResponse>('/auth/login', sendPayload)
 
     if (!data?.datos) {

@@ -1,4 +1,4 @@
-﻿// src/repositories/solicitud.repository.ts
+// src/repositories/solicitud.repository.ts
 // Acceso a datos de solicitudes, grupos_curso, historial_v2 e inscripciones_activas.
 
 import { pool }           from '../config/database';
@@ -357,7 +357,8 @@ export class RepositorioSolicitud {
       const resultado = await pool.query(
         `SELECT id_solicitud AS id, codigo_solicitud, tipo_novedad AS tipo_solicitud,
                 estado_solicitud AS estado, justificacion_detallada AS justificacion,
-                periodo_academico, validacion_json, fecha_creacion AS created_at
+                periodo_academico, validacion_json, fecha_creacion AS created_at,
+                observaciones_resolucion AS observaciones
            FROM solicitudes
           WHERE ${condiciones.join(' AND ')}
           ORDER BY fecha_creacion DESC`,
@@ -405,11 +406,12 @@ export class RepositorioSolicitud {
                 s.estado_solicitud AS estado,
                 s.justificacion_detallada AS justificacion,
                 s.periodo_academico, s.validacion_json,
-                s.fecha_creacion AS created_at,
+                s.fecha_creacion AS created_at, s.updated_at,
                 e.nombre_completo AS nombre_estudiante,
-                e.cod_alumno AS codigo_estudiantil
+                e.codigo_estudiantil, p.nombre_programa AS programa
            FROM solicitudes s
            JOIN estudiantes e ON e.cod_alumno = s.cod_alumno
+           LEFT JOIN programas p ON p.id_programa = e.programa_id
           WHERE ${condiciones.join(' AND ')}
           ORDER BY s.fecha_creacion DESC`,
         params,
@@ -659,6 +661,7 @@ export class RepositorioSolicitud {
           s.tipo_novedad,
           s.motivo_novedad,
           s.justificacion_detallada,
+          s.observaciones_resolucion,
           s.estado_solicitud,
           s.periodo_academico,
           s.fecha_creacion,
@@ -747,54 +750,52 @@ export class RepositorioSolicitud {
         ORDER BY d.created_at ASC
       `, [idSolicitud]);
 
-      // ── Historial (desde notificaciones — no hay tabla historial_solicitudes) ─
-      // Se construye una línea de tiempo sintética:
-      //   1) Radicación: fecha_creacion de solicitud
-      //   2) Notificaciones asociadas: orden cronológico
-      const { rows: notificaciones } = await pool.query(`
-        SELECT
-          n.id,
-          n.titulo,
-          n.mensaje,
-          n.created_at,
-          COALESCE(u.nombre_completo, 'Sistema') AS actor,
-          COALESCE(LOWER(u.rol::TEXT), 'sistema') AS rol_actor
-        FROM notificaciones n
-        LEFT JOIN usuarios u ON u.id_usuario = n.usuario_id
-        WHERE n.solicitud_id = $1
-        ORDER BY n.created_at ASC
-      `, [idSolicitud]);
+      type Cambio = {
+        id_evento: string | number;
+        descripcion: string;
+        observacion: string | null;
+        estado_nuevo: string;
+        estado_anterior: string | null;
+        fecha: Date;
+        actor: string | null;
+        rol_actor: string | null;
+      };
+      const { rows: cambios } = await pool.query<Cambio>(
+        'SELECT id AS id_evento, $2::text AS descripcion, observacion, estado_nuevo, ' +
+        'estado_anterior, fecha, actor_nombre AS actor, actor_rol AS rol_actor ' +
+        'FROM auditoria_eventos WHERE entidad = $3 AND entidad_id = $1 AND accion = $4 ORDER BY id',
+        [idSolicitud, 'Cambio de estado', 'solicitud', 'solicitud_estado'],
+      );
 
-      // Construir historial: primero la radicación, luego notificaciones
-      const historial = [
-        {
-          id_evento:       0,
-          descripcion:     'Solicitud radicada',
-          observacion:     null,
-          estado_nuevo:    'PENDIENTE',
-          estado_anterior: null,
-          fecha:           base.fecha_creacion,
-          actor:           base.nombre_completo,
-          rol_actor:       'estudiante',
-        },
-        ...notificaciones.map((n: any) => ({
-          id_evento:       n.id,
-          descripcion:     n.titulo,
-          observacion:     n.mensaje,   // mensaje completo con las observaciones
-          estado_nuevo:    base.estado_solicitud,
-          estado_anterior: null,
-          fecha:           n.created_at,
-          actor:           n.actor,
-          rol_actor:       n.rol_actor,
-        })),
-      ];
+      const historial: Cambio[] = [{
+        id_evento: 0,
+        descripcion: 'Solicitud radicada',
+        observacion: null,
+        estado_nuevo: 'PENDIENTE',
+        estado_anterior: null,
+        fecha: base.fecha_creacion,
+        actor: base.nombre_completo,
+        rol_actor: 'estudiante',
+      }, ...cambios];
 
-      // Observaciones de resolución: se lee desde justificacion_detallada
-      // Solo cuando el estado ya no es PENDIENTE (fue procesada por secretaría)
-      const observacionesResolucion =
-        base.estado_solicitud !== 'PENDIENTE'
-          ? base.justificacion_detallada ?? null
-          : null;
+      const estadoPrevio = cambios[0]?.estado_anterior || base.estado_solicitud;
+      const teniaGestionAnterior = estadoPrevio !== 'PENDIENTE';
+      const observacionesResolucion = base.observaciones_resolucion ??
+        (teniaGestionAnterior && !cambios.length ? base.justificacion_detallada : null);
+      const justificacionOriginal = teniaGestionAnterior ? null : base.justificacion_detallada;
+
+      if (!cambios.length && teniaGestionAnterior && base.updated_at) {
+        historial.push({
+          id_evento: 'estado-anterior-a-auditoria',
+          descripcion: 'Último estado registrado',
+          observacion: observacionesResolucion,
+          estado_nuevo: base.estado_solicitud,
+          estado_anterior: null,
+          fecha: base.updated_at,
+          actor: base.resuelta_por_nombre,
+          rol_actor: base.resuelta_por_rol,
+        });
+      }
 
       return {
         // ── Encabezado ────────────────────────────────────────────
@@ -819,9 +820,7 @@ export class RepositorioSolicitud {
         detalle_solicitud: {
           tipo_novedad:             base.tipo_novedad,
           motivo_novedad:           base.motivo_novedad,
-          justificacion_detallada:  base.estado_solicitud === 'PENDIENTE'
-                                      ? base.justificacion_detallada
-                                      : null,
+          justificacion_detallada:  justificacionOriginal,
           observaciones_resolucion: observacionesResolucion,
           validacion_json:          base.validacion_json,
           grupo_actual:             grupoActual,

@@ -1,26 +1,28 @@
 <template>
-  <div class="h-full px-6 flex items-center">
+  <div class="flex h-full items-center justify-between gap-3 px-4 sm:px-6">
 
     <!-- Título -->
-    <span class="text-sm font-semibold text-slate-500 basis-1/3">
+    <span class="hidden basis-1/3 text-sm font-semibold text-slate-500 md:block">
       Estudiante
     </span>
 
     <!-- Logo centrado -->
-    <div class="flex items-center gap-2 basis-1/3 justify-center">
+    <div class="flex min-w-0 items-center gap-2 md:basis-1/3 md:justify-center">
       <div class="w-10 h-8 flex items-center justify-center shrink-0">
-        <img src="/logo-uniautonoma.png" alt="Uniatónoma del Cauca" class="w-full h-full object-contain" />
+        <img src="/logo-uniautonoma.png" alt="" class="w-full h-full object-contain" />
       </div>
-      <span class="logo text-lg font-bold text-blue-600 tracking-tight">Novedades Autonoma</span>
+      <span class="logo text-sm font-bold tracking-tight text-blue-600 sm:text-lg">Novedades Autónoma</span>
     </div>
 
     <!-- Acciones -->
-    <div ref="notificationsRoot" class="relative flex items-center gap-3 basis-1/3 justify-end">
+    <div ref="notificationsRoot" class="relative flex shrink-0 items-center justify-end gap-1 sm:gap-3 md:basis-1/3">
 
       <!-- Notificaciones -->
-      <button
+    <button
         class="relative p-2 rounded-lg hover:bg-slate-100 transition-colors text-slate-400 hover:text-slate-600"
         type="button"
+        aria-label="Notificaciones"
+        :aria-expanded="isOpen"
         @click="toggleNotificaciones"
       >
         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -37,7 +39,7 @@
 
       <div
         v-if="isOpen"
-        class="absolute top-12 right-0 z-50 w-80 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden"
+        class="absolute top-12 right-0 z-50 w-[min(20rem,calc(100vw-2rem))] bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden"
       >
         <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
           <h3 class="text-sm font-semibold text-slate-700">Notificaciones</h3>
@@ -51,9 +53,7 @@
           </button>
         </div>
 
-        <div v-if="isLoading" class="px-4 py-8 text-sm text-slate-500 text-center">
-          Cargando notificaciones...
-        </div>
+        <Cargando v-if="isLoading" texto="Cargando notificaciones…" />
 
         <div v-else-if="errorMessage" class="px-4 py-6 text-sm text-red-500 text-center">
           {{ errorMessage }}

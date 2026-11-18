@@ -24,6 +24,25 @@ function archivoABase64(archivo: File): Promise<string> {
   })
 }
 
+interface SolicitudPropia extends Solicitud {
+  codigo_solicitud?: string
+  tipo_solicitud?: string
+  tramite?: string
+  fecha_creacion?: string
+  created_at?: string
+  fecha_envio?: string
+}
+
+interface SolicitudOperativa extends Solicitud {
+  codigo_solicitud?: string
+  tipo_solicitud?: string
+  nombre_estudiante?: string
+  codigo_estudiantil?: string
+  programa?: string
+  created_at?: string
+  updated_at?: string
+}
+
 const solicitudesService = {
   /**
    * GET /api/solicitudes/mias
@@ -33,13 +52,17 @@ const solicitudesService = {
    * Response: array de Solicitud
    * Backend envuelve en: { ok, mensaje, datos: [...], codigo_estado }
    */
-  async getMisSolicitudes(filtros?: { estado?: string; periodo?: string }): Promise<Solicitud[]> {
+  async getMisSolicitudes(
+    filtros?: { estado?: string; periodo?: string },
+    opciones?: { propagarError?: boolean },
+  ): Promise<SolicitudPropia[]> {
     try {
-      const { data } = await http.get<any>('/solicitudes/mias', { params: filtros })
+      const { data } = await http.get<{ datos?: SolicitudPropia[] }>('/solicitudes/mias', { params: filtros })
       // El backend devuelve: { ok, mensaje, datos: [...], codigo_estado }
       return data.datos || []
     } catch (error) {
       console.error('❌ Error obteniendo mis solicitudes:', error)
+      if (opciones?.propagarError) throw error
       return []
     }
   },
@@ -122,13 +145,14 @@ const solicitudesService = {
     estado?: string
     periodo?: string
     tipo_solicitud?: string
-  }): Promise<Solicitud[]> {
+  }, opciones?: { propagarError?: boolean }): Promise<SolicitudOperativa[]> {
     try {
-      const { data } = await http.get<any>('/solicitudes', { params })
+      const { data } = await http.get<{ datos?: SolicitudOperativa[] }>('/solicitudes', { params })
       // El backend devuelve: { ok, mensaje, datos: [...], codigo_estado }
       return data.datos || []
     } catch (error) {
       console.error('❌ Error obteniendo todas las solicitudes:', error)
+      if (opciones?.propagarError) throw error
       return []
     }
   },

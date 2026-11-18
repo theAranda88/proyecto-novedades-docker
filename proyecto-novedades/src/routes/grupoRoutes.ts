@@ -27,13 +27,14 @@ const controladorEst  = new ControladorEstudiante();
  *       ### Filtros disponibles:
  *       | Parámetro | Tipo | Requerido | Descripción |
  *       |---|---|---|---|
- *       | `periodo` | string | ✅ Sí | Periodo académico (ej: `2026-1`) |
+ *       | `periodo` | string | No | Periodo académico (ej: `2026-1`). Si se omite, usa el periodo más reciente con grupos activos para los filtros indicados. |
  *       | `curso_id` | number | No | Filtrar por ID de curso específico |
  *       | `jornada` | string | No | Filtrar por jornada: `manana`, `tarde`, `noche` |
  *
  *       ### Ejemplo de uso en el front:
  *       ```
- *       // Al cargar el formulario → traer todos los grupos del periodo
+ *       // Al cargar el formulario → traer los grupos del periodo activo más reciente
+ *       GET /api/grupos
  *       GET /api/grupos?periodo=2026-1
  *
  *       // Al seleccionar "Cambio de Curso" y un curso específico
@@ -49,7 +50,7 @@ const controladorEst  = new ControladorEstudiante();
  *     parameters:
  *       - in: query
  *         name: periodo
- *         required: true
+ *         required: false
  *         schema:
  *           type: string
  *           example: "2026-1"
@@ -109,12 +110,12 @@ const controladorEst  = new ControladorEstudiante();
  *                   periodo: "2026-1"
  *               codigo_estado: 200
  *       400:
- *         description: Parámetro "periodo" faltante o formato inválido
+ *         description: Formato de periodo inválido
  *         content:
  *           application/json:
  *             example:
  *               ok: false
- *               mensaje: 'El parámetro "periodo" es obligatorio. Ej: ?periodo=2026-1'
+ *               mensaje: "Formato de periodo inválido. Use AAAA-N (ej: 2026-1)"
  *               datos: null
  *               codigo_estado: 400
  *       401:
@@ -130,4 +131,3 @@ enrutadorGrupos.get(
 );
 
 export default enrutadorGrupos;
-

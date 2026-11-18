@@ -218,7 +218,7 @@
       <div class="flex items-center gap-2.5">
         <button @click="router.back()" class="px-5 py-2 rounded-xl border border-slate-200 text-[13px] font-semibold text-slate-600 hover:bg-slate-50 transition-all">Cancelar y Volver</button>
         <button @click="handleSubmit" :disabled="isLoading" class="flex items-center gap-2 px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-[13px] font-bold transition-all shadow-md shadow-indigo-200 hover:-translate-y-px active:translate-y-0">
-          <svg v-if="isLoading" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>
+          <Cargando v-if="isLoading" decorativo />
           <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
           {{ isLoading ? 'Enviando...' : 'Enviar Solicitud' }}
         </button>

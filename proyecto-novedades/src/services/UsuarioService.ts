@@ -1,11 +1,15 @@
 // src/services/UsuarioService.ts
 // Lógica de negocio para gestión de usuarios — Creación con control de roles
 
+import { randomBytes } from 'node:crypto';
 import bcrypt                        from 'bcrypt';
 import { RepositorioUsuario }        from '../repositories/usuario.repository';
 import { TCrearUsuario, RolUsuarioEnum } from '../schemas/usuario.schema';
 import { ErrorNegocio, ErrorAutenticacion } from '../middlewares/errorHandler';
 import { RolUsuario }                from '../middlewares/authMiddleware';
+
+import { enviarCorreoAcceso } from './correoAcceso';
+import type { EstadoCorreoAcceso } from './correoAcceso';
 
 const COSTO_BCRYPT = Number(process.env.BCRYPT_COST ?? 12);
 
@@ -19,8 +23,9 @@ type ResultadoCreacionUsuario = {
   codigo_estudiantil: string;
   rol:                string;
   primer_login:       boolean;
-  contrasena_temporal: string; // La contraseña generada automáticamente (para mostrar una sola vez)
-  mensaje_contrasena: string;  // Instructivo para el usuario
+  contrasena_temporal?: string;
+  mensaje_contrasena?: string;
+  correo_acceso?: EstadoCorreoAcceso;
   programa_id?:       number;  // Si rol = ESTUDIANTE
   semestre_actual?:   number;  // Si rol = ESTUDIANTE
   jornada?:           string;  // Si rol = ESTUDIANTE
@@ -109,7 +114,7 @@ export class ServicioUsuario {
       );
     }
 
-    // 4. Generar contraseña temporal aleatoria (10 caracteres + números)
+    // 4. Generar contraseña temporal con entropía criptográfica
     const contrasenaTemp = this.generarContrasenaTemporal();
 
     // 5. Hashear contraseña con bcrypt (cost ≥ 12)
@@ -157,7 +162,9 @@ export class ServicioUsuario {
       throw new ErrorNegocio('Error al crear el usuario en la base de datos', 500);
     }
 
-    // 8. Preparar respuesta con instrucciones
+    const correoAcceso = datosCreacion.rol === 'SECRETARIA'
+      ? await enviarCorreoAcceso(idUsuarioCreado, datosCreacion.email_institucional, datosCreacion.nombre_completo, contrasenaTemp)
+      : undefined;
     const respuesta: ResultadoCreacionUsuario = {
       id_usuario:          idUsuarioCreado,
       nombre_completo:     datosCreacion.nombre_completo,
@@ -165,10 +172,11 @@ export class ServicioUsuario {
       codigo_estudiantil:  datosCreacion.codigo_estudiantil,
       rol:                 datosCreacion.rol.toLowerCase(),
       primer_login:        true,
-      contrasena_temporal: contrasenaTemp,
-      mensaje_contrasena:  `CONTRASEÑA TEMPORAL: "${contrasenaTemp}"\n` +
-                           `Este usuario DEBE cambiar su contraseña al primer login.\n` +
-                           `La contraseña no se puede recuperar después. Guárdela de forma segura.`,
+      correo_acceso:       correoAcceso,
+      ...(correoAcceso === 'aceptado' ? {} : {
+        contrasena_temporal: contrasenaTemp,
+        mensaje_contrasena: 'El usuario debe cambiar la contraseña al iniciar sesión por primera vez.',
+      }),
     };
 
     // Agregar datos de estudiante si aplica
@@ -205,31 +213,7 @@ export class ServicioUsuario {
     return PERMISOS_CREACION[rolUsuarioAutor] || [];
   }
 
-  /**
-   * Genera una contraseña temporal aleatoria.
-   * Formato: 8 caracteres alfabéticos + 2 números
-   * Ejemplo: "AbCdEfGh42"
-   *
-   * @returns {string} Contraseña temporal de 10 caracteres
-   */
   private generarContrasenaTemporal(): string {
-    const letras = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
-    const numeros = '0123456789';
-    let contrasena = '';
-
-    // 8 caracteres aleatorios
-    for (let i = 0; i < 8; i++) {
-      contrasena += letras.charAt(Math.floor(Math.random() * letras.length));
-    }
-
-    // 2 números aleatorios
-    for (let i = 0; i < 2; i++) {
-      contrasena += numeros.charAt(Math.floor(Math.random() * numeros.length));
-    }
-
-    // Mezclar para no ser predecible (contraseña + números juntos)
-    return contrasena.split('').sort(() => 0.5 - Math.random()).join('');
+    return randomBytes(15).toString('base64url');
   }
 }
-
-

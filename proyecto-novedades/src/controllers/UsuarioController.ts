@@ -61,6 +61,7 @@ export class ControladorUsuario {
         return;
       }
 
+      res.setHeader('Cache-Control', 'no-store');
       const usuarioCreado = await this.servicioUsuario.crearUsuario(
         datos,
         idUsuarioAutor,
@@ -69,7 +70,7 @@ export class ControladorUsuario {
 
       RespuestaUtil.exito(
         res,
-        'Usuario creado exitosamente. Contraseña temporal generada (ver datos)',
+        'Usuario creado correctamente.',
         usuarioCreado,
         201,
       );
@@ -112,5 +113,3 @@ export class ControladorUsuario {
     }
   }
 }
-
-

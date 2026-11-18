@@ -3,6 +3,7 @@
         v-bind="$attrs"
         :type="type"
         :disabled="disabled || loading"
+        :aria-busy="loading || undefined"
         :class="[
             'inline-flex items-center justify-center gap-2 rounded-lg font-semibold',
             'transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2',
@@ -12,17 +13,7 @@
         ]"
     >
 
-    <!-- Spinner de carga -->
-     <svg
-        v-if="loading"
-        class="animate-ping w-4 h-4 shrink-0"
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-     >
-        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-     </svg>
+    <Cargando v-if="loading" decorativo />
 
      <slot/>
     </button>
@@ -57,7 +48,7 @@ const sizeClasses = computed(() => ({
 }[props.size]));
 
 const variantClasses = computed(() => ({
-    primary: 'bg-[var(--color-orange)] text-white hover:bg-[var(--color-orange-dark)] focus:ring-[var(--color-orange)] active:bg-[var(--color-orange-dark)]',
+    primary: 'bg-[var(--color-orange)] text-[#172f48] hover:bg-[#f6be86] focus:ring-[var(--color-orange)] active:bg-[#f6be86]',
     secondary: 'bg-slate-100 text-slate-700 hover:bg-slate-200 focus:ring-slate-400 border border-slate-300',
     ghost: 'bg-transparent text-blue-600 hover:bg-blue-50 focus:ring-blue-400',
     danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500'

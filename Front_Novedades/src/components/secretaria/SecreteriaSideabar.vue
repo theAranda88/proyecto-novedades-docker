@@ -1,5 +1,5 @@
 <template>
-  <aside class="w-40 min-h-screen bg-white border-r border-slate-200 flex flex-col fixed top-0 left-0 z-20">
+  <aside class="z-20 flex shrink-0 flex-wrap items-center justify-between gap-x-1 border-b border-slate-200 bg-white md:fixed md:inset-y-0 md:left-0 md:w-52 md:flex-col md:items-stretch md:border-r md:border-b-0">
 
     <!-- Brand tag -->
     <div class="px-4 py-4 border-b border-slate-100 flex items-center gap-2">
@@ -10,7 +10,7 @@
     </div>
 
     <!-- Nav -->
-    <nav class="flex-1 py-4 flex flex-col gap-0.5 px-2">
+    <nav aria-label="Navegación del panel" class="order-3 flex w-full gap-1 overflow-x-auto px-2 py-2 md:order-0 md:flex-1 md:flex-col md:py-4">
       <RouterLink
         v-for="item in navItems"
         :key="item.routeName"
@@ -19,9 +19,9 @@
         v-slot="{ isActive, navigate }"
       >
         <button
-          @click="navigate"
+          type="button" :aria-current="isActive ? 'page' : undefined" @click="navigate"
           :class="[
-            'flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all w-full text-left',
+            'flex min-h-10 shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors md:w-full',
             isActive
               ? 'bg-indigo-50 text-indigo-700 font-semibold'
               : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700',
@@ -73,7 +73,7 @@
     </nav>
 
     <!-- Cerrar sesión -->
-    <div class="px-2 py-4 border-t border-slate-100">
+    <div class="order-2 px-2 py-2 md:order-0 md:border-t md:border-slate-200 md:py-4">
       <button
         @click="$emit('logout')"
         class="flex items-center gap-2 px-3 py-2 text-[13px] text-red-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all w-full font-medium"
@@ -98,7 +98,7 @@ import type { NavItem } from '../../types'
 defineEmits<{ logout: [] }>()
 
 const navItems: NavItem[] = [
-  { label: 'Dashboard',             routeName: 'SecretariaSolicitudes', iconKey: 'home'    },
-  { label: 'Gestionar Solicitudes', routeName: 'SecretariaSolicitudes', iconKey: 'history' },
+  { label: 'Bandeja', routeName: 'SecretariaSolicitudes', iconKey: 'home' },
+  { label: 'Historial', routeName: 'SecretariaHistorial', iconKey: 'history' },
 ]
 </script>

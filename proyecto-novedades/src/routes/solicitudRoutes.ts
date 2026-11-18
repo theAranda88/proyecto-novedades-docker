@@ -282,7 +282,7 @@ enrutadorSolicitudes.get(
  *       **Campo `observaciones`:**
  *       - ⚠️ **OBLIGATORIO** cuando `estado = aprobada` o `estado = rechazada` (mínimo 10 chars)
  *       - Opcional cuando `estado = en_revision`
- *       - Se guarda en `justificacion_detallada` y aparece en el historial del detalle
+ *       - Se guarda en `observaciones_resolucion` y aparece en el historial del detalle
  *
  *       La operación es **transaccional (ACID)**: si falla la notificación, se hace ROLLBACK.
  *     tags:
@@ -449,15 +449,14 @@ enrutadorSolicitudes.get(
  *       | `estudiante` | nombre_completo, codigo_estudiantil, programa, semestre, promedio_acumulado (PAPA), correo, jornada |
  *       | `detalle_solicitud` | tipo_novedad, justificacion_detallada, motivo_novedad, grupo_actual, grupo_solicitado, validacion_json |
  *       | `documentos` | id, nombre_archivo, tipo_mime, tamanio_bytes, url_archivo, fecha_subida |
- *       | `historial` | línea de tiempo: radicación + notificaciones en orden cronológico |
+ *       | `historial` | línea de tiempo: radicación y cambios de estado en orden cronológico |
  *
  *       **Control de acceso:**
  *       - `SECRETARIA` / `ADMIN` → puede ver cualquier solicitud
  *       - `ESTUDIANTE` → solo puede ver sus propias solicitudes (403 si intenta ver otra)
  *
  *       **Nota técnica — Historial:**
- *       El historial se construye desde la tabla `notificaciones` (no existe tabla
- *       `historial_solicitudes` en BD). La primera entrada siempre es la radicación.
+ *       El historial incluye la radicación y las transiciones registradas en auditoría.
  *     tags:
  *       - Solicitudes
  *     security:
@@ -569,4 +568,3 @@ enrutadorSolicitudes.get(
 );
 
 export default enrutadorSolicitudes;
-

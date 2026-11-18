@@ -23,6 +23,7 @@ export class ControladorGestionUsuarios {
     this.actualizarUsuario = this.actualizarUsuario.bind(this);
     this.desactivarUsuario = this.desactivarUsuario.bind(this);
     this.reactivarUsuario = this.reactivarUsuario.bind(this);
+    this.eliminarSecretaria = this.eliminarSecretaria.bind(this);
     this.actualizarEstadoMatricula = this.actualizarEstadoMatricula.bind(this);
   }
 
@@ -187,6 +188,7 @@ export class ControladorGestionUsuarios {
         rolUsuarioAutor,
       );
 
+      req.app.get('io')?.in('usuario-' + idUsuario).disconnectSockets(true);
       RespuestaUtil.exito(
         res,
         'Usuario desactivado exitosamente. No podrá acceder al sistema',
@@ -226,6 +228,22 @@ export class ControladorGestionUsuarios {
         { id_usuario: idUsuario, activo: true },
         200,
       );
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async eliminarSecretaria(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const idUsuario = Number(req.params.id);
+      if (!Number.isSafeInteger(idUsuario) || idUsuario <= 0) {
+        RespuestaUtil.error(res, 'El ID debe ser un entero positivo.', 400);
+        return;
+      }
+      const autor = req.usuario!;
+      await this.servicioGestion.eliminarSecretaria(idUsuario, autor.id_usuario, autor.rol);
+      req.app.get('io')?.in('usuario-' + idUsuario).disconnectSockets(true);
+      RespuestaUtil.exito(res, 'Cuenta eliminada del directorio.', { id_usuario: idUsuario });
     } catch (error) {
       next(error);
     }
@@ -277,4 +295,3 @@ export class ControladorGestionUsuarios {
     }
   }
 }
-

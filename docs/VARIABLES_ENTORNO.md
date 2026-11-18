@@ -102,3 +102,25 @@ Sin ese archivo: **WebSocket + BD** siguen funcionando para notificaciones; push
 | `Front_Novedades/.env` | Frontend fuera de Docker (solo `VITE_*`) |
 
 Nunca commitear `.env` ni JSON de Firebase.
+
+## Correo de acceso para secretaría
+
+Configura las siguientes variables en el servidor de la API. Con Docker Compose se leen del archivo .env de la raíz.
+
+| Variable | Uso |
+|----------|-----|
+| RESEND_API_KEY | Clave de envío de [Resend](https://resend.com/docs/api-reference/emails/send-email). Se guarda como secreto del servidor. |
+| CORREO_ACCESO_REMITENTE | Dirección institucional del dominio verificado. Puede incluir el nombre visible del remitente. |
+| CORREO_ACCESO_URL_PORTAL | URL pública del acceso al portal, opcional. |
+
+Al crear una cuenta de secretaría, el sistema solicita el envío de la clave temporal. El portal exige el cambio en el primer ingreso. Si el proveedor no se ha configurado o no confirma que aceptó el correo, administración dispone de la clave en la sección de entrega manual de esa sesión.
+
+### Envío desde Gmail
+
+Para enviar desde una cuenta Gmail, configura CORREO_ACCESO_PROVEEDOR=gmail en el .env de la raíz. Configura GMAIL_SMTP_USER con el correo remitente y GMAIL_SMTP_APP_PASSWORD con una [contraseña de aplicación de Google](https://support.google.com/accounts/answer/185833?hl=es). Google exige activar la verificación en dos pasos para crearla. Guarda esa clave solo en la configuración privada del backend.
+
+Gmail recibe como destino el correo de la cuenta de secretaría registrada. Si faltan las credenciales o falla el envío, el portal permite la entrega manual. Después de actualizar estas variables, recrea el contenedor de la API para cargar el nuevo entorno.
+
+## Auditoría operativa
+
+Docker Compose aplica la migración 013 al iniciar el servicio de migración. En despliegues con una base existente administrada por separado, aplica migrations/013_auditoria_operativa.sql antes de actualizar la API. Los registros de auditoría se generan a partir de esa instalación.

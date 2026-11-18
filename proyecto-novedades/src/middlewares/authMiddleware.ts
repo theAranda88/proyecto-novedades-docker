@@ -5,6 +5,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt                                  from 'jsonwebtoken';
 import { ZodSchema }                        from 'zod';
 import { RespuestaUtil }                    from '../utils/RespuestaUtil';
+import { cuentaTieneAcceso } from '../repositories/usuario.repository';
 
 /**
  * Roles disponibles en el sistema Proyecto Novedades.
@@ -73,11 +74,11 @@ export const validarEsquema = (esquema: ZodSchema) => {
  * @seguridad HTTP 403 — Token expirado
  * @seguridad HTTP 403 — primer_login = true (contraseña temporal sin cambiar)
  */
-export const verificarToken = (
+export const verificarToken = async (
   req: Request,
   res: Response,
   next: NextFunction,
-): void => {
+): Promise<void> => {
   const encabezadoAutorizacion = req.headers['authorization'];
   const token = encabezadoAutorizacion?.split(' ')[1];
 
@@ -92,8 +93,9 @@ export const verificarToken = (
     return;
   }
 
+  let payload: PayloadToken;
   try {
-    const payload = jwt.verify(token, secreto) as PayloadToken;
+    payload = jwt.verify(token, secreto) as PayloadToken;
 
     // Bloquear acceso si el usuario no ha cambiado su contraseña temporal
     if (payload.primer_login === true) {
@@ -105,8 +107,6 @@ export const verificarToken = (
       return;
     }
 
-    req.usuario = payload;
-    next();
   } catch (error) {
     const esExpirado = (error as Error).name === 'TokenExpiredError';
     RespuestaUtil.error(
@@ -116,7 +116,10 @@ export const verificarToken = (
         : 'Token de autenticación inválido',
       esExpirado ? 403 : 401,
     );
+    return;
   }
+
+  await continuarSiCuentaActiva(payload, req, res, next);
 };
 
 /**
@@ -127,11 +130,11 @@ export const verificarToken = (
  * @seguridad HTTP 401 — Token ausente o inválido
  * @seguridad HTTP 403 — Token expirado
  */
-export const verificarTokenCambioPassword = (
+export const verificarTokenCambioPassword = async (
   req: Request,
   res: Response,
   next: NextFunction,
-): void => {
+): Promise<void> => {
   const encabezadoAutorizacion = req.headers['authorization'];
   const token = encabezadoAutorizacion?.split(' ')[1];
 
@@ -146,9 +149,9 @@ export const verificarTokenCambioPassword = (
     return;
   }
 
+  let payload: PayloadToken;
   try {
-    req.usuario = jwt.verify(token, secreto) as PayloadToken;
-    next();
+    payload = jwt.verify(token, secreto) as PayloadToken;
   } catch (error) {
     const esExpirado = (error as Error).name === 'TokenExpiredError';
     RespuestaUtil.error(
@@ -158,8 +161,21 @@ export const verificarTokenCambioPassword = (
         : 'Token de autenticación inválido',
       esExpirado ? 403 : 401,
     );
+    return;
   }
+
+  await continuarSiCuentaActiva(payload, req, res, next);
 };
+
+async function continuarSiCuentaActiva(payload: PayloadToken, req: Request, res: Response, next: NextFunction) {
+  const idUsuario = Number(payload.id_usuario);
+  if (!await cuentaTieneAcceso(idUsuario)) {
+    RespuestaUtil.error(res, 'La cuenta no tiene acceso. Consulte con administración.', 401);
+    return;
+  }
+  req.usuario = { ...payload, id_usuario: idUsuario };
+  next();
+}
 
 /**
  * Middleware de autorización por rol.

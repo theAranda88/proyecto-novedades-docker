@@ -51,7 +51,8 @@
               </select>
               <!-- Detalle del curso actual seleccionado -->
               <CuposDetalle v-if="modelValue.cursoActual" :grupo="cuposInfo(cursosActual, modelValue.cursoActual)" :matriculados-ids="gruposMatriculadosIds" />
-              <p v-else-if="cargando || cursosActual.length === 0" class="text-xs text-slate-400 mt-1">{{ cargando ? '⏳ Cargando...' : 'Sin cursos disponibles' }}</p>
+              <Cargando v-else-if="cargando" inline texto="Cargando cursos…" class="mt-1 text-slate-600" />
+              <p v-else-if="cursosActual.length === 0" class="mt-1 text-xs text-slate-600">Sin cursos disponibles</p>
             </div>
             <div>
               <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Nuevo Curso
@@ -67,7 +68,8 @@
               </select>
               <!-- Detalle del nuevo curso seleccionado -->
               <CuposDetalle v-if="modelValue.nuevoCurso" :grupo="cuposInfo(cursosActual, modelValue.nuevoCurso)" :matriculados-ids="gruposMatriculadosIds" />
-              <p v-else-if="cargando || cursosActual.length === 0" class="text-xs text-slate-400 mt-1">{{ cargando ? '⏳ Cargando...' : 'Sin cursos disponibles' }}</p>
+              <Cargando v-else-if="cargando" inline texto="Cargando cursos…" class="mt-1 text-slate-600" />
+              <p v-else-if="cursosActual.length === 0" class="mt-1 text-xs text-slate-600">Sin cursos disponibles</p>
             </div>
           </div>
           <div class="grid grid-cols-2 gap-4">
@@ -135,7 +137,7 @@
               </option>
             </select>
             <CuposDetalle v-if="modelValue.nuevoCurso" :grupo="cuposInfo(cursosNuevo, modelValue.nuevoCurso)" :matriculados-ids="gruposMatriculadosIds" />
-            <p v-else-if="cargando" class="text-xs text-slate-400 mt-1">⏳ Cargando cursos...</p>
+            <Cargando v-else-if="cargando" inline texto="Cargando cursos…" class="mt-1 text-slate-600" />
             <p v-else-if="cursosNuevo.length === 0" class="text-xs text-slate-400 mt-1">ℹ️ No hay cursos disponibles para esta jornada</p>
           </div>
         </div>
@@ -153,7 +155,7 @@
             </option>
           </select>
           <CuposDetalle v-if="modelValue.materia" :grupo="cuposInfo(todosLosCursos, modelValue.materia)" :matriculados-ids="gruposMatriculadosIds" />
-          <p v-else-if="cargando && todosLosCursos.length === 0" class="text-xs text-slate-400 mt-1">⏳ Cargando cursos...</p>
+          <Cargando v-else-if="cargando && todosLosCursos.length === 0" inline texto="Cargando cursos…" class="mt-1 text-slate-600" />
         </div>
 
         <div v-if="modelValue.tipoSolicitud === 'Adición de Curso'"
@@ -170,7 +172,7 @@
             </option>
           </select>
           <CuposDetalle v-if="modelValue.cursoAdicionar" :grupo="cuposInfo(todosLosCursos, modelValue.cursoAdicionar)" :matriculados-ids="gruposMatriculadosIds" />
-          <p v-else-if="cargando && todosLosCursos.length === 0" class="text-xs text-slate-400 mt-1">⏳ Cargando cursos...</p>
+          <Cargando v-else-if="cargando && todosLosCursos.length === 0" inline texto="Cargando cursos…" class="mt-1 text-slate-600" />
         </div>
 
         <div v-if="modelValue.tipoSolicitud === 'Cancelación de Semestre'"
@@ -202,7 +204,7 @@
               </option>
             </select>
             <CuposDetalle v-if="modelValue.materiaExamen" :grupo="cuposInfo(todosLosCursos, modelValue.materiaExamen)" :matriculados-ids="gruposMatriculadosIds" />
-            <p v-else-if="cargando && todosLosCursos.length === 0" class="text-xs text-slate-400 mt-1">⏳ Cargando cursos...</p>
+            <Cargando v-else-if="cargando && todosLosCursos.length === 0" inline texto="Cargando cursos…" class="mt-1 text-slate-600" />
           </div>
           <div>
             <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Motivo de Solicitud</label>
@@ -250,13 +252,11 @@
       </div>
     </Transition>
 
-    <div class="border border-slate-200 rounded-xl p-4 bg-white space-y-3">
+    <section aria-labelledby="horario-semanal" class="space-y-4 rounded-2xl border border-slate-200 bg-blue-50/50 p-4 sm:p-5">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div>
-          <h3 class="text-sm font-semibold text-slate-700">Horario Semanal y Cruce de Materias</h3>
-          <p class="text-xs text-slate-500">
-            Bloque fijo de lunes a domingo para visualizar rápidamente traslapes de horario.
-          </p>
+          <h3 id="horario-semanal" class="text-lg font-bold">Horario semanal</h3>
+          <p class="mt-1 text-sm text-slate-600">Compara el curso solicitado con tus clases actuales para detectar cruces.</p>
         </div>
         <span
           class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium"
@@ -266,27 +266,36 @@
         </span>
       </div>
 
+      <Cargando v-if="cargandoHorario" inline texto="Cargando tu horario actual…" />
       <div
-        v-if="resumenCruce"
+        v-else-if="resumenCruce && horarioNuevoBloque"
+        role="status"
         class="text-xs rounded-lg px-3 py-2"
         :class="hayCruceDetectado ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'"
       >
         {{ resumenCruce }}
       </div>
 
-      <div class="overflow-x-auto pb-1">
-        <div class="grid grid-flow-col auto-cols-[minmax(170px,1fr)] gap-3 min-w-max">
+      <div v-if="!cargandoHorario">
+        <label class="mb-3 grid max-w-64 gap-1 text-sm font-semibold">
+          Días del horario
+          <select v-model="diaHorarioVisible" class="min-h-10 rounded-lg border border-slate-300 bg-white px-3 font-normal">
+            <option value="">Toda la semana</option>
+            <option v-for="dia in diasHorario" :key="dia.key" :value="dia.key">{{ dia.label }}</option>
+          </select>
+        </label>
+        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <article
-            v-for="dia in diasHorario"
+            v-for="dia in diasVisibles"
             :key="dia.key"
-            class="rounded-xl border border-slate-200 bg-gradient-to-b from-white to-slate-50 p-3 space-y-2 shadow-sm"
+            class="min-w-0 space-y-2 rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm"
           >
             <header class="flex items-center justify-between">
-              <h4 class="text-xs font-semibold text-slate-700 uppercase tracking-wide">{{ dia.label }}</h4>
-              <span class="text-[11px] text-slate-400">{{ bloquesPorDia[dia.key].length }} bloque(s)</span>
+              <h4 class="text-sm font-bold text-blue-700">{{ dia.label }}</h4>
+              <span v-if="bloquesPorDia[dia.key].length" class="text-xs text-slate-600">{{ bloquesPorDia[dia.key].length === 1 ? "1 clase" : bloquesPorDia[dia.key].length + " clases" }}</span>
             </header>
 
-            <div v-if="bloquesPorDia[dia.key].length === 0" class="text-xs text-slate-400 py-3 text-center">
+            <div v-if="bloquesPorDia[dia.key].length === 0" class="rounded-lg border border-dashed border-slate-300 px-2 py-3 text-center text-xs text-slate-600">
               Sin clases
             </div>
 
@@ -294,11 +303,11 @@
               <div
                 v-for="bloque in bloquesPorDia[dia.key]"
                 :key="bloque.id"
-                class="rounded-lg border px-2.5 py-2 text-xs shadow-[0_1px_2px_rgba(15,23,42,0.06)]"
+                class="entrada-suave rounded-lg border border-l-4 px-2.5 py-2 text-xs"
                 :class="bloque.isCruce ? 'border-red-300 bg-red-50 text-red-700 ring-1 ring-red-200' : bloque.colorClass"
               >
                 <div class="flex items-start justify-between gap-2">
-                  <span class="font-semibold text-[11px] leading-4 break-all pr-1">{{ bloque.nombre }}</span>
+                  <span class="min-w-0 break-words text-xs font-semibold leading-4">{{ bloque.nombre }}</span>
                   <span
                     class="px-1.5 py-0.5 rounded-full text-[10px] font-medium shrink-0"
                     :class="bloque.isCruce ? 'bg-red-100 text-red-700' : bloque.badgeClass"
@@ -313,7 +322,7 @@
           </article>
         </div>
       </div>
-    </div>
+    </section>
 
     <!-- Justificación -->
     <div>
@@ -431,6 +440,7 @@ const gruposMatriculadosIds = ref<number[]>([])
 const materiasMatriculadas = ref<MateriaMatriculada[]>([])
 const cargandoHorario = ref(false)
 
+const diaHorarioVisible = ref<DiaClave | ''>('')
 const diasHorario: Array<{ key: DiaClave; label: string }> = [
   { key: 'lunes', label: 'Lunes' },
   { key: 'martes', label: 'Martes' },
@@ -442,7 +452,7 @@ const diasHorario: Array<{ key: DiaClave; label: string }> = [
 ]
 
 const coloresActuales = [
-  { colorClass: 'border-sky-300 bg-sky-50 text-sky-700', badgeClass: 'bg-sky-100 text-sky-700' },
+  { colorClass: 'border-blue-300 bg-blue-50 text-blue-700', badgeClass: 'bg-blue-100 text-blue-700' },
   { colorClass: 'border-cyan-300 bg-cyan-50 text-cyan-700', badgeClass: 'bg-cyan-100 text-cyan-700' },
   { colorClass: 'border-indigo-300 bg-indigo-50 text-indigo-700', badgeClass: 'bg-indigo-100 text-indigo-700' },
   { colorClass: 'border-amber-300 bg-amber-50 text-amber-700', badgeClass: 'bg-amber-100 text-amber-700' },
@@ -656,6 +666,8 @@ const horarioVisual = computed<HorarioBloque[]>(() => {
   if (horarioNuevoBloque.value) bloques.push(horarioNuevoBloque.value)
   return bloques
 })
+
+const diasVisibles = computed(() => diasHorario.filter(dia => !diaHorarioVisible.value || diaHorarioVisible.value === dia.key))
 
 const bloquesPorDia = computed<Record<DiaClave, HorarioBloque[]>>(() => {
   const agrupado: Record<DiaClave, HorarioBloque[]> = {
